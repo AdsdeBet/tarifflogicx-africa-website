@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TariffLogicX Africa — South African Customs Tariff Lookup &amp; Landed Cost Calculator</title>
+<meta name="description" content="Customs tariff lookup and landed cost calculator for South African importers, exporters, freight forwarders, and customs clearing agents. Built around the real SARS Customs Tariff Schedule and ITAC control gazettes.">
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .hero {
+    background: linear-gradient(180deg, #0F6E56 0%, #0B4F3F 100%);
+    color: #fff;
+    padding: 64px 20px 72px;
+    text-align: center;
+  }
+  .hero img.logo { width: 96px; height: 96px; border-radius: 22px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+  .hero h1 { font-size: 34px; margin: 0 0 12px; font-weight: 700; }
+  .hero p.tagline { font-size: 17px; opacity: 0.9; max-width: 560px; margin: 0 auto 28px; }
+  .cta-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  section { max-width: 1080px; margin: 0 auto; padding: 56px 20px; }
+  h2.section-title { text-align: center; font-size: 26px; margin-bottom: 8px; }
+  p.section-sub { text-align: center; color: var(--muted); max-width: 560px; margin: 0 auto 40px; }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+  }
+  .feature-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+  }
+  .feature-card .icon { font-size: 26px; margin-bottom: 10px; }
+  .feature-card h3 { margin: 0 0 8px; font-size: 16px; }
+  .feature-card p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  .price-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .price-card.highlight { border: 2px solid var(--brand); }
+  .price-card h3 { margin: 0 0 4px; font-size: 16px; }
+  .price-card .price { font-size: 24px; font-weight: 700; color: var(--brand); margin: 8px 0; }
+  .price-card .price small { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .price-card ul { padding-left: 18px; margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+  .price-card ul li { margin-bottom: 6px; }
+  .price-note { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; }
+
+  .disclaimer-box {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .shot-scroll {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding: 8px 4px 20px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .shot-scroll::-webkit-scrollbar { height: 8px; }
+  .shot-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .shot-card {
+    flex: 0 0 auto;
+    width: 220px;
+    scroll-snap-align: start;
+  }
+  .shot-card img {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    display: block;
+  }
+  .shot-card p {
+    margin: 10px 2px 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .store-cta {
+    background: linear-gradient(180deg, #0F6E56 0%, #0B4F3F 100%);
+    text-align: center;
+    padding: 56px 20px;
+    color: #fff;
+  }
+  .store-cta h2 { font-size: 24px; margin: 0 0 10px; }
+  .store-cta p { opacity: 0.85; max-width: 480px; margin: 0 auto 28px; font-size: 14px; }
+  .store-badges { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+  .store-badge-link { display: inline-block; }
+  .store-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #000;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 10px;
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 13px;
+    text-align: left;
+    line-height: 1.25;
+  }
+  .store-badge .glyph { font-size: 22px; }
+  .store-badge .label small { display: block; font-size: 10px; opacity: 0.75; }
+  .store-badge .label strong { display: block; font-size: 15px; font-weight: 600; }
+  .store-badge.disabled {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.55);
+    cursor: default;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    counter-reset: step;
+  }
+  .step-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    position: relative;
+  }
+  .step-card .step-num {
+    counter-increment: step;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand-light);
+    color: var(--brand);
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .step-card .step-num::before { content: counter(step); }
+  .step-card h3 { margin: 0 0 6px; font-size: 15px; }
+  .step-card p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand"><img src="assets/logo.png" alt="TariffLogicX Africa logo"> TariffLogicX Africa</a>
+    <nav class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <img class="logo" src="assets/logo.png" alt="TariffLogicX Africa logo">
+  <h1>TariffLogicX Africa</h1>
+  <p class="tagline">Customs tariff lookup and landed cost calculator for South African importers, exporters, freight forwarders, and customs clearing agents — built around the real SARS Customs Tariff Schedule and ITAC control gazettes, not a simplified estimate.</p>
+  <span class="cta-badge">📱 Available soon on Google Play</span>
+  <p style="margin:18px 0 0; font-size:14px; opacity:0.9;">🎉 New here? Use launch code <strong>TLXA3</strong> in the app for 3 hours of full Pro access — free, no card needed.</p>
+</div>
+
+<section id="screenshots" style="padding-top:48px;">
+  <h2 class="section-title">See it in action</h2>
+  <p class="section-sub">A quick look at classification, pricing, and reference tools — all working with the real SARS Schedule.</p>
+  <div class="shot-scroll">
+    <div class="shot-card">
+      <img src="assets/screenshots/01_home.png" alt="Home screen with the HS chapter index" loading="lazy">
+      <p>Browse all 98 HS chapters right from Home</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/04_search_results.png" alt="Search results for a product" loading="lazy">
+      <p>Search by product name or HS code</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/05_ai_classify.png" alt="AI classification result with confidence and reasoning" loading="lazy">
+      <p>AI-powered classification with reasoning</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/03_tariff_detail.png" alt="Tariff code detail with duty, VAT and trade agreement rates" loading="lazy">
+      <p>Duty, VAT, and trade-agreement rates at a glance</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/06_landed_cost.png" alt="Landed cost calculator" loading="lazy">
+      <p>Landed cost using SARS' real ATV formula</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/02_chapter_browse.png" alt="Browsing tariff codes within a chapter" loading="lazy">
+      <p>Drill into any chapter's real tariff codes</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/07_important_information.png" alt="Important Information reference library" loading="lazy">
+      <p>A full trade-compliance reference library</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/08_reference_detail.png" alt="In-depth reference detail page" loading="lazy">
+      <p>In-depth guidance, not just a summary</p>
+    </div>
+    <div class="shot-card">
+      <img src="assets/screenshots/09_forex.png" alt="Live exchange rates screen" loading="lazy">
+      <p>Live exchange rates, refreshed on open</p>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" style="background:#fff; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <h2 class="section-title">How it works</h2>
+  <p class="section-sub">From product to landed cost in a few taps — no account, no spreadsheet.</p>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num"></div>
+      <h3>Find the HS code</h3>
+      <p>Search by product name, type the code directly, scan a barcode, or describe the product in plain language and let AI Classify suggest it — with confidence levels and reasoning.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num"></div>
+      <h3>Check duty, VAT &amp; permits</h3>
+      <p>Every result shows the General duty rate plus preferential rates (SACU, SADC, AfCFTA, EU/UK EPA, EFTA, MERCOSUR), VAT treatment, and whether a permit is required — and from which authority.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num"></div>
+      <h3>Calculate the landed cost</h3>
+      <p>Enter the goods value, freight, and insurance and get the real Added Tax Value (ATV) and total landed cost — using SARS' actual formula, not a simplified estimate.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num"></div>
+      <h3>Browse the reference library</h3>
+      <p>Not sure where to start? Browse all 98 HS chapters from Home, or check Important Information for HazChem, Incoterms® 2020, trade agreements, permits by authority, and more.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num"></div>
+      <h3>Save &amp; export</h3>
+      <p>Star codes you use often, keep a shipment log with CSV export and WhatsApp sharing, and export PDF or landed cost reports (Subscriber/Pro).</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num"></div>
+      <h3>Try it free</h3>
+      <p>3 tariff searches and 3 AI classifications a day, always free. Or redeem launch code <strong>TLXA3</strong> in Settings for 3 hours of unlimited access to try everything at once.</p>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <h2 class="section-title">What it does</h2>
+  <p class="section-sub">Everything you need to classify, price, and clear a shipment — in one app.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon">🔍</div>
+      <h3>HS code search &amp; barcode scan</h3>
+      <p>Find the right HS code by product name, code, or barcode scan — with real duty rates, VAT treatment, and permit requirements.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🤖</div>
+      <h3>AI-powered classification</h3>
+      <p>Describe a product in plain language and get suggested HS codes with confidence levels and reasoning.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🧮</div>
+      <h3>Landed cost calculator</h3>
+      <p>Uses SARS' actual Added Tax Value (ATV) formula — not the simplified "CIF × duty, then 15% VAT" math that under-states what you'll really pay.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🌍</div>
+      <h3>Preferential trade agreements</h3>
+      <p>Duty rates for SACU, SADC, AfCFTA, EU/UK EPA, EFTA, and MERCOSUR, plus AGOA and rebate item notes.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🛃</div>
+      <h3>ITAC &amp; compliance reference</h3>
+      <p>Import/export control and permit checks, dangerous goods / HazChem reference, Incoterms® 2020 guide, and prohibited goods categories.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📶</div>
+      <h3>Offline-first</h3>
+      <p>Tariff data syncs to your device so lookups work without a connection — only AI classification needs internet.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📄</div>
+      <h3>Documentation checklists</h3>
+      <p>SAD 500, proof of origin, permits, and more — know exactly what paperwork a shipment needs.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📊</div>
+      <h3>Shipment log</h3>
+      <p>Local history of imports/exports with CSV export, WhatsApp sharing, and rate-change alerts.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🇿🇦</div>
+      <h3>English &amp; Afrikaans</h3>
+      <p>Full localisation for both languages.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" style="background:#fff; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <h2 class="section-title">Pricing</h2>
+  <p class="section-sub">Free to use, with daily limits. Upgrade for unlimited access — as a subscription or a one-time pass, your choice.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <h3>Free</h3>
+      <div class="price">R0</div>
+      <ul>
+        <li>3 tariff code searches/lookups per day</li>
+        <li>3 AI classifications per day</li>
+        <li>Up to 5 saved favourites</li>
+      </ul>
+    </div>
+    <div class="price-card highlight">
+      <h3>Subscriber — Individual</h3>
+      <div class="price">R540<small>/month incl. VAT</small></div>
+      <ul>
+        <li>Individuals &amp; companies under 100 staff</li>
+        <li>Unlimited searches &amp; AI classifications</li>
+        <li>PDF &amp; landed cost report export</li>
+        <li>Auto-renews, cancel anytime via Google Play</li>
+      </ul>
+    </div>
+    <div class="price-card highlight">
+      <h3>Subscriber — Company</h3>
+      <div class="price">R900<small>/month incl. VAT</small></div>
+      <ul>
+        <li>Companies with 100+ staff</li>
+        <li>Same unlimited access as Individual</li>
+        <li>Auto-renews, cancel anytime via Google Play</li>
+      </ul>
+    </div>
+    <div class="price-card">
+      <h3>Pro Pass (pay once)</h3>
+      <div class="price">from R36</div>
+      <ul>
+        <li>24-Hour Access — R36.00 incl. VAT</li>
+        <li>7-Day Access — R150.00 incl. VAT</li>
+        <li>14-Day Access — R300.00 incl. VAT</li>
+        <li>No auto-renewal, no cancellation needed</li>
+      </ul>
+    </div>
+  </div>
+  <p class="price-note">All prices in South African Rand, incl. 15% VAT. Billed and managed entirely through Google Play.</p>
+</section>
+
+<section>
+  <h2 class="section-title">A word on accuracy</h2>
+  <div class="disclaimer-box">
+    TariffLogicX Africa is an independent reference tool and is not affiliated with, or endorsed by, the South African Revenue Service (SARS), the International Trade Administration Commission (ITAC), or any South African government body. Tariff and duty information is provided for reference purposes only and should be verified against the official SARS and ITAC publications before making customs decisions — always confirm current rates and permit requirements directly with SARS/ITAC or a registered customs clearing agent before importing or exporting goods.
+  </div>
+</section>
+
+<section class="store-cta">
+  <h2>Get TariffLogicX Africa</h2>
+  <p>Free to start — 3 tariff searches a day, no account needed. Subscribe or grab a Pro pass any time you need more.</p>
+  <div class="store-badges">
+    <a class="store-badge-link" href="https://play.google.com/store/apps/details?id=za.co.tarifflogicxafrica.app" target="_blank" rel="noopener">
+      <span class="store-badge">
+        <span class="glyph">▶</span>
+        <span class="label"><small>GET IT ON</small><strong>Google Play</strong></span>
+      </span>
+    </a>
+    <span class="store-badge disabled" title="Not available yet">
+      <span class="glyph"></span>
+      <span class="label"><small>COMING LATER</small><strong>App Store</strong></span>
+    </span>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="links">
+    <a href="privacy.html">Privacy Policy &amp; Terms</a>
+    <a href="delete-data.html">Request Data Deletion</a>
+    <a href="mailto:info@tarifflogicxafrica.co.za">Contact</a>
+  </div>
+  TariffLogicX Africa &middot; Raven &amp; Rose Digital Products &middot; South Africa
+</footer>
+
+</body>
+</html>
