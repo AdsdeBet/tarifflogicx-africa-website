@@ -48,23 +48,50 @@ function storeAccessToken(token, expiresInMs) {
 
 const accessModal = document.getElementById('access-modal');
 const accessLoggedInView = document.getElementById('access-logged-in-view');
+const accessBuyView = document.getElementById('access-buy-view');
 const accessRedeemView = document.getElementById('access-redeem-view');
 const accessAdminView = document.getElementById('access-admin-view');
 const redeemForm = document.getElementById('redeem-form');
 const redeemError = document.getElementById('redeem-error');
 const adminLoginForm = document.getElementById('admin-login-form');
 const adminLoginError = document.getElementById('admin-login-error');
+const buyError = document.getElementById('buy-error');
+
+// Must match TIERS in proxy-server/src/routes/payfast.js exactly (label/price
+// shown here is cosmetic only — the server is what actually enforces price).
+const PRICING_TIERS = [
+  { tier: '24h', label: '24-Hour Pro Pass', price: 'R36.00', sub: 'once-off' },
+  { tier: '7d', label: '7-Day Pro Pass', price: 'R150.00', sub: 'once-off' },
+  { tier: '14d', label: '14-Day Pro Pass', price: 'R300.00', sub: 'once-off' },
+  { tier: 'individual_monthly', label: 'Subscriber — Individual', price: 'R540.00', sub: 'per month' },
+  { tier: 'company_monthly', label: 'Subscriber — Company', price: 'R900.00', sub: 'per month' },
+];
+
+document.getElementById('buy-tiers').innerHTML = PRICING_TIERS.map((t) => `
+  <div class="result-card" style="cursor:default; display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px;">
+    <div>
+      <div style="font-weight:600; font-size:13px;">${escapeHtml(t.label)}</div>
+      <div class="hint" style="margin:0;">${escapeHtml(t.price)} ${escapeHtml(t.sub)}</div>
+    </div>
+    <button class="btn-primary" style="width:auto; padding:8px 16px; flex-shrink:0;" data-buy-tier="${t.tier}">Buy</button>
+  </div>
+`).join('');
+
+function showAccessView(view) {
+  accessLoggedInView.style.display = view === 'logged-in' ? 'block' : 'none';
+  accessBuyView.style.display = view === 'buy' ? 'block' : 'none';
+  accessRedeemView.style.display = view === 'redeem' ? 'block' : 'none';
+  accessAdminView.style.display = view === 'admin' ? 'block' : 'none';
+}
 
 function refreshAccessModalView() {
-  const unlocked = hasAccess();
-  accessLoggedInView.style.display = unlocked ? 'block' : 'none';
-  accessRedeemView.style.display = unlocked ? 'none' : 'block';
-  accessAdminView.style.display = 'none';
+  showAccessView(hasAccess() ? 'logged-in' : 'buy');
 }
 
 function openAccessModal() {
   redeemError.style.display = 'none';
   adminLoginError.style.display = 'none';
+  buyError.style.display = 'none';
   refreshAccessModalView();
   accessModal.style.display = 'flex';
 }
@@ -72,17 +99,59 @@ function openAccessModal() {
 document.getElementById('access-link').addEventListener('click', (e) => { e.preventDefault(); openAccessModal(); });
 document.getElementById('access-cancel-btn').addEventListener('click', () => { accessModal.style.display = 'none'; });
 document.getElementById('admin-cancel-btn').addEventListener('click', () => { accessModal.style.display = 'none'; });
+document.getElementById('buy-cancel-btn').addEventListener('click', () => { accessModal.style.display = 'none'; });
 accessModal.addEventListener('click', (e) => { if (e.target === accessModal) accessModal.style.display = 'none'; });
 
-document.getElementById('show-admin-login-link').addEventListener('click', (e) => {
-  e.preventDefault();
-  accessRedeemView.style.display = 'none';
-  accessAdminView.style.display = 'block';
-});
+document.getElementById('show-admin-login-link').addEventListener('click', (e) => { e.preventDefault(); showAccessView('admin'); });
+document.getElementById('show-redeem-link').addEventListener('click', (e) => { e.preventDefault(); showAccessView('redeem'); });
 
 document.getElementById('access-logout-btn').addEventListener('click', () => {
   localStorage.removeItem('tlxa_access_token');
   accessModal.style.display = 'none';
+});
+
+// ── Buy (PayFast) ────────────────────────────────────────────────────
+document.getElementById('buy-tiers').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-buy-tier]');
+  if (!btn) return;
+  const email = document.getElementById('buy-email-input').value.trim();
+  buyError.style.display = 'none';
+  if (!email || !email.includes('@')) {
+    buyError.textContent = 'Enter a valid email address first — PayFast sends your receipt there.';
+    buyError.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Redirecting…';
+  try {
+    const res = await fetch(`${API_BASE}/web/payfast/initiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: btn.dataset.buyTier, email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not start checkout.');
+    // Build and auto-submit a real form POST — PayFast expects a form
+    // submission (not a fetch/XHR body) so the buyer's browser actually
+    // navigates to their hosted, secure payment page.
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = data.action;
+    Object.entries(data.fields).forEach(([k, v]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = k;
+      input.value = v;
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  } catch (err) {
+    buyError.textContent = err.message || 'Something went wrong — try again.';
+    buyError.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Buy';
+  }
 });
 
 redeemForm.addEventListener('submit', (e) => {
@@ -125,6 +194,51 @@ adminLoginForm.addEventListener('submit', async (e) => {
     adminLoginError.style.display = 'block';
   }
 });
+
+// ── PayFast return handling ──────────────────────────────────────────
+// After paying (or cancelling), PayFast redirects the browser back here.
+// The redirect itself proves nothing (no payment proof attached) — the
+// real confirmation is the separate server-to-server ITN webhook, which
+// may arrive slightly before or after this redirect. So: poll the status
+// endpoint for a few seconds rather than trusting the URL alone.
+async function handlePayfastReturn() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('payfast_cancelled') === '1') {
+    openAccessModal();
+    buyError.textContent = 'Checkout was cancelled — no payment was made.';
+    buyError.style.display = 'block';
+    return;
+  }
+  const paymentId = params.get('m_payment_id');
+  if (params.get('payfast_return') !== '1' || !paymentId) return;
+
+  openAccessModal();
+  showAccessView('buy');
+  buyError.style.display = 'none';
+  const banner = document.createElement('div');
+  banner.className = 'loading-row';
+  banner.innerHTML = '<span class="spinner"></span> Confirming your payment…';
+  accessBuyView.prepend(banner);
+
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`${API_BASE}/web/payfast/status/${encodeURIComponent(paymentId)}`);
+      const data = await res.json();
+      if (data.status === 'complete') {
+        storeAccessToken(data.token, data.expiresInMs);
+        banner.remove();
+        refreshAccessModalView();
+        if (typeof onAccessChanged === 'function') onAccessChanged();
+        return;
+      }
+    } catch { /* keep polling */ }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  banner.remove();
+  buyError.textContent = "Payment is taking longer than expected to confirm. If you completed checkout, this should unlock within a minute — try Redeem/refresh shortly, or contact support if it doesn't.";
+  buyError.style.display = 'block';
+}
 
 // ── Tabs ──────────────────────────────────────────────────────────────
 function showTab(name) {
@@ -601,4 +715,5 @@ function onAccessChanged() {
     await loadInfoIndex();
     openInfoTopic(initialTopic);
   }
+  handlePayfastReturn();
 })();

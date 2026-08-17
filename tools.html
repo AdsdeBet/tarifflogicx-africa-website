@@ -137,8 +137,8 @@
   <div style="margin-top:8px;"><a href="#" id="access-link" style="font-size:11px;">Unlock full access</a></div>
 </footer>
 
-<div id="access-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
-  <div style="background:#fff; border-radius:14px; padding:24px; width:300px; max-width:90vw;">
+<div id="access-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center; overflow-y:auto; padding:20px 0;">
+  <div style="background:#fff; border-radius:14px; padding:24px; width:340px; max-width:90vw; max-height:90vh; overflow-y:auto;">
 
     <div id="access-logged-in-view" style="display:none;">
       <h3 style="margin:0 0 12px; font-size:15px;">You're unlocked</h3>
@@ -146,9 +146,23 @@
       <button class="btn-secondary" id="access-logout-btn" style="width:100%;">Log out</button>
     </div>
 
-    <div id="access-redeem-view">
+    <div id="access-buy-view">
       <h3 style="margin:0 0 6px; font-size:15px;">Unlock full access</h3>
-      <p style="font-size:12.5px; color:var(--muted); margin:0 0 12px;">Have a code from a Subscriber plan or Pro pass? Redeem it here. Online checkout is coming soon — for now, contact <a href="mailto:info@tarifflogicxafrica.co.za">info@tarifflogicxafrica.co.za</a> to arrange a code.</p>
+      <p style="font-size:12.5px; color:var(--muted); margin:0 0 12px;">Secure payment via PayFast. Choose a plan:</p>
+      <label class="field-label" for="buy-email-input">Email (for your receipt)</label>
+      <input class="text-input" type="email" id="buy-email-input" placeholder="you@example.com" style="margin-bottom:12px;">
+      <div id="buy-error" class="error-box" style="display:none;"></div>
+      <div id="buy-tiers"></div>
+      <div style="text-align:center; margin-top:14px; display:flex; justify-content:center; gap:14px;">
+        <a href="#" id="show-redeem-link" style="font-size:11px; color:var(--muted);">Have a code?</a>
+        <a href="#" id="show-admin-login-link" style="font-size:11px; color:var(--muted);">Admin login</a>
+      </div>
+      <button type="button" class="btn-secondary" id="buy-cancel-btn" style="width:100%; margin-top:10px;">Cancel</button>
+    </div>
+
+    <div id="access-redeem-view" style="display:none;">
+      <h3 style="margin:0 0 6px; font-size:15px;">Redeem an access code</h3>
+      <p style="font-size:12.5px; color:var(--muted); margin:0 0 12px;">For codes arranged directly (e.g. EFT), not needed for a normal PayFast purchase.</p>
       <form id="redeem-form">
         <input class="text-input" type="text" id="redeem-code-input" placeholder="Paste your access code" style="margin-bottom:8px;">
         <div id="redeem-error" class="error-box" style="display:none;"></div>
@@ -157,9 +171,6 @@
           <button type="submit" class="btn-primary" style="flex:1;">Redeem</button>
         </div>
       </form>
-      <div style="text-align:center; margin-top:14px;">
-        <a href="#" id="show-admin-login-link" style="font-size:11px; color:var(--muted);">Admin login</a>
-      </div>
     </div>
 
     <div id="access-admin-view" style="display:none;">
