@@ -543,6 +543,16 @@ function onAccessChanged() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
-const params = new URLSearchParams(location.search);
-const initialTab = params.get('tab');
-if (initialTab && document.querySelector(`.tab-btn[data-tab="${initialTab}"]`)) showTab(initialTab);
+// ?tab=info&topic=hazchem deep-links here from the static SEO preview
+// pages (info/<key>.html "Open in the free tools" button) straight into
+// that specific topic, instead of just the generic tab.
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const initialTab = params.get('tab');
+  const initialTopic = params.get('topic');
+  if (initialTab && document.querySelector(`.tab-btn[data-tab="${initialTab}"]`)) showTab(initialTab);
+  if (initialTab === 'info' && initialTopic) {
+    await loadInfoIndex();
+    openInfoTopic(initialTopic);
+  }
+})();
