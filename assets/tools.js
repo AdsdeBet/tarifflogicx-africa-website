@@ -502,10 +502,56 @@ function renderInfoContent(key, data) {
     <button class="btn-secondary" id="info-back-btn">&larr; Back to topics</button>
     <div class="result-card" style="cursor:default; margin-top:14px;">
       <div class="result-desc" style="font-weight:700; font-size:15px; color:var(--app-primary-dark); margin-bottom:10px;">${escapeHtml(title)}</div>
-      ${renderJsonAsHtml(data)}
+      ${key === 'forex' ? renderForexContent(data) : renderJsonAsHtml(data)}
     </div>
   `;
   document.getElementById('info-back-btn').addEventListener('click', () => renderInfoIndex());
+}
+
+// Regional-indicator flag emoji from an ISO 3166-1 alpha-2 code — no image
+// assets needed, renders natively wherever the OS has flag emoji support.
+function flagEmoji(iso2) {
+  if (!iso2 || iso2.length !== 2) return '🌍';
+  return String.fromCodePoint(...iso2.toUpperCase().split('').map((c) => 127397 + c.charCodeAt(0)));
+}
+
+// forex gets its own layout rather than the generic JSON walk below: that
+// walk would flatten its {code, currency_name, ...} list into ~185 bare
+// paragraphs of currency codes and country names with no visual hierarchy
+// — exactly the "bland, hard to spot the rate" complaint. A real per-
+// currency row with a flag and a large, prominent rate value fixes that.
+function renderForexContent(data) {
+  const groupLabels = { africa: 'Africa', international: 'Major International', other: 'Other' };
+  const groups = {};
+  (data.currencies || []).forEach((c) => { (groups[c.group] ??= []).push(c); });
+
+  const groupsHtml = Object.entries(groupLabels).map(([groupKey, label]) => {
+    const items = groups[groupKey];
+    if (!items || !items.length) return '';
+    return `
+      <div class="lc-section-label" style="margin-top:18px;">${label}</div>
+      ${items.map((c) => `
+        <div class="forex-row">
+          <span class="forex-flag">${flagEmoji(c.country_iso2)}</span>
+          <div class="forex-info">
+            <div class="forex-code">${escapeHtml(c.code)}</div>
+            <div class="forex-name">${escapeHtml(c.currency_name)} &middot; ${escapeHtml(c.country_name)}</div>
+          </div>
+          <div class="forex-rate">${Number(c.rate_per_zar).toFixed(c.rate_per_zar < 1 ? 4 : 2)}</div>
+        </div>
+      `).join('')}
+    `;
+  }).join('');
+
+  const rest = { ...data };
+  delete rest.currencies; delete rest.base; delete rest.fetched_at; delete rest.source_date; delete rest.version; delete rest.disclaimer;
+
+  return `
+    <div class="forex-live-banner">🔄 <strong>Live rates</strong> as of ${escapeHtml(data.source_date ?? '')} — refreshed automatically. 1 ZAR equals:</div>
+    ${groupsHtml}
+    <div class="lc-section-label" style="margin-top:20px;">More on invoicing &amp; cross-border payments</div>
+    ${renderJsonAsHtml(rest)}
+  `;
 }
 
 function renderJsonAsHtml(value, depth = 0) {

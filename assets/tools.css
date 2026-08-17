@@ -268,6 +268,37 @@
 .lc-row .lc-val-vat { color: var(--vat-text); font-weight: 600; }
 .lc-disclaimer { font-size: 11px; color: var(--muted); line-height: 1.6; background: #F7F4EF; border-radius: 8px; padding: 12px; margin-top: 12px; }
 
+/* ── Forex ─────────────────────────────────────────────────────────── */
+.forex-live-banner {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.forex-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 8px;
+}
+.forex-flag { font-size: 26px; line-height: 1; flex-shrink: 0; }
+.forex-info { flex: 1; min-width: 0; }
+.forex-code { font-weight: 700; font-size: 13.5px; font-family: ui-monospace, monospace; color: var(--text); }
+.forex-name { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.forex-rate {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--app-primary-dark);
+  font-family: ui-monospace, monospace;
+  flex-shrink: 0;
+}
+
 .app-cta-inline {
   text-align: center;
   margin-top: 28px;
