@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tariff Lookup, AI Classify &amp; Landed Cost Calculator — TariffLogicX Africa</title>
+<meta name="description" content="Free South African HS tariff code search, AI-powered product classification, and a landed cost calculator using SARS' real Added Tax Value formula — right in your browser.">
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/tools.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand"><img src="assets/logo.png" alt="TariffLogicX Africa logo"> TariffLogicX Africa</a>
+    <nav class="nav-links">
+      <a href="/#how-it-works">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+  </div>
+</header>
+
+<div class="tools-header">
+  <h1>Try it right here — no install needed</h1>
+  <p>The same real SARS-based tariff data, AI classification, and landed cost formula as the app. 3 searches and 3 AI classifications free per day — get the app for unlimited, offline, and more.</p>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="search">🔍 Search</button>
+  <button class="tab-btn" data-tab="ai-classify">✨ AI Classify</button>
+  <button class="tab-btn" data-tab="landed-cost">🧮 Landed Cost</button>
+  <button class="tab-btn" data-tab="info">📚 Important Info</button>
+</div>
+
+<div class="tools-body">
+
+  <!-- ── Search ─────────────────────────────────────────────────── -->
+  <div class="tab-panel active" data-tab="search">
+    <label class="field-label" for="search-input">Product name or HS code</label>
+    <div class="search-row">
+      <input class="text-input" type="text" id="search-input" placeholder="e.g. copper, frozen chicken, 7318.15" autocomplete="off">
+    </div>
+    <p class="hint">Searches the real SARS Customs Tariff Schedule — try a product name or type a code directly.</p>
+    <div id="search-results"></div>
+  </div>
+
+  <!-- ── AI Classify ────────────────────────────────────────────── -->
+  <div class="tab-panel" data-tab="ai-classify">
+    <div class="ai-intro">✨ <strong>AI-powered classification.</strong> Not sure of the code? Describe your product and Claude will suggest likely HS codes with South Africa–specific reasoning.</div>
+    <label class="field-label" for="classify-input">Describe the product</label>
+    <textarea class="text-input" id="classify-input" rows="3" placeholder="e.g. stainless steel kitchen sink with two basins"></textarea>
+    <button class="btn-primary" id="classify-btn" style="margin-top:12px;">✨ Suggest HS codes</button>
+    <div id="classify-results"></div>
+  </div>
+
+  <!-- ── Landed Cost ────────────────────────────────────────────── -->
+  <div class="tab-panel" data-tab="landed-cost">
+    <div id="lc-code-header" class="lc-code-header" style="display:none;"></div>
+    <div id="lc-no-code" class="lc-no-code">
+      No code selected yet — enter a duty rate manually below, or <a data-tab-link="search">search for a product first</a> to auto-fill it.
+    </div>
+
+    <div id="lc-form">
+      <div class="lc-field">
+        <label class="field-label" for="lc-goods-value">Goods value — FOB (ZAR)</label>
+        <input class="text-input" type="text" inputmode="decimal" id="lc-goods-value" placeholder="e.g. 150000">
+      </div>
+      <div class="lc-field">
+        <label class="field-label" for="lc-freight">International freight (ZAR)</label>
+        <input class="text-input" type="text" inputmode="decimal" id="lc-freight" value="0">
+      </div>
+      <div class="lc-field">
+        <label class="field-label" for="lc-insurance">Marine/transport insurance (ZAR)</label>
+        <input class="text-input" type="text" inputmode="decimal" id="lc-insurance" value="0">
+        <p class="hint">Website version is ZAR-only — the app also supports live multi-currency conversion.</p>
+      </div>
+
+      <div class="lc-section-label">Duty &amp; VAT</div>
+      <div class="lc-field">
+        <label class="field-label" for="lc-duty-rate">Customs duty rate (%)</label>
+        <input class="text-input" type="text" inputmode="decimal" id="lc-duty-rate" value="0">
+        <p class="hint">Auto-filled when you arrive from a Search or AI Classify result — edit if needed.</p>
+      </div>
+      <div class="lc-field">
+        <label class="field-label" for="lc-vat-applicable">VAT applicable</label>
+        <select class="text-input" id="lc-vat-applicable">
+          <option value="1" selected>Yes — 15%</option>
+          <option value="0">No — exempt</option>
+        </select>
+      </div>
+
+      <div class="lc-section-label">Origin &amp; extra duties</div>
+      <label class="lc-checkbox-row">
+        <input type="checkbox" id="lc-blns">
+        Goods originate in Botswana, Lesotho, Namibia, or Eswatini (BLNS)
+      </label>
+      <div class="lc-field">
+        <label class="field-label" for="lc-ad-valorem">Ad valorem excise duty % (luxury goods only, if applicable)</label>
+        <input class="text-input" type="text" inputmode="decimal" id="lc-ad-valorem" value="0">
+      </div>
+
+      <div class="lc-section-label">After-clearance costs</div>
+      <div class="lc-field">
+        <label class="field-label" for="lc-clearing">Clearing &amp; forwarding agent fee (ZAR)</label>
+        <input class="text-input" type="text" inputmode="decimal" id="lc-clearing" value="0">
+      </div>
+
+      <button class="btn-primary" id="lc-calc-btn">🧮 Calculate landed cost</button>
+    </div>
+
+    <div id="lc-results"></div>
+  </div>
+
+  <!-- ── Important Information ─────────────────────────────────────── -->
+  <div class="tab-panel" data-tab="info">
+    <div class="ai-intro">📚 <strong>90+ topic compliance reference library.</strong> Browsing the topic list is always free. Opening a topic's full content needs a Subscriber plan or Pro pass — same as in the app, no free quota on these.</div>
+    <div id="info-index">Loading…</div>
+  </div>
+
+  <div class="app-cta-inline">
+    Like what you see? The app adds offline lookups, barcode scan, favourites, multi-currency landed cost, shipment log, and the full 90+ topic compliance reference library.<br>
+    <a href="https://play.google.com/store/apps/details?id=za.co.tarifflogicxafrica.app" target="_blank" rel="noopener">Get it on Google Play →</a>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="privacy.html">Privacy Policy &amp; Terms</a>
+    <a href="delete-data.html">Request Data Deletion</a>
+    <a href="mailto:info@tarifflogicxafrica.co.za">Contact</a>
+  </div>
+  TariffLogicX Africa &middot; Raven &amp; Rose Digital Products &middot; South Africa
+  <div style="margin-top:8px;"><a href="#" id="access-link" style="font-size:11px;">Unlock full access</a></div>
+</footer>
+
+<div id="access-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; padding:24px; width:300px; max-width:90vw;">
+
+    <div id="access-logged-in-view" style="display:none;">
+      <h3 style="margin:0 0 12px; font-size:15px;">You're unlocked</h3>
+      <p style="font-size:13px; color:var(--muted);">Unlimited searches, AI classifications, and full reference content on this device until the session expires.</p>
+      <button class="btn-secondary" id="access-logout-btn" style="width:100%;">Log out</button>
+    </div>
+
+    <div id="access-redeem-view">
+      <h3 style="margin:0 0 6px; font-size:15px;">Unlock full access</h3>
+      <p style="font-size:12.5px; color:var(--muted); margin:0 0 12px;">Have a code from a Subscriber plan or Pro pass? Redeem it here. Online checkout is coming soon — for now, contact <a href="mailto:info@tarifflogicxafrica.co.za">info@tarifflogicxafrica.co.za</a> to arrange a code.</p>
+      <form id="redeem-form">
+        <input class="text-input" type="text" id="redeem-code-input" placeholder="Paste your access code" style="margin-bottom:8px;">
+        <div id="redeem-error" class="error-box" style="display:none;"></div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button type="button" class="btn-secondary" id="access-cancel-btn" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn-primary" style="flex:1;">Redeem</button>
+        </div>
+      </form>
+      <div style="text-align:center; margin-top:14px;">
+        <a href="#" id="show-admin-login-link" style="font-size:11px; color:var(--muted);">Admin login</a>
+      </div>
+    </div>
+
+    <div id="access-admin-view" style="display:none;">
+      <h3 style="margin:0 0 12px; font-size:15px;">Admin login</h3>
+      <form id="admin-login-form">
+        <input class="text-input" type="text" id="admin-username" placeholder="Username" autocomplete="username" style="margin-bottom:8px;">
+        <input class="text-input" type="password" id="admin-password" placeholder="Password" autocomplete="current-password" style="margin-bottom:8px;">
+        <div id="admin-login-error" class="error-box" style="display:none;"></div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button type="button" class="btn-secondary" id="admin-cancel-btn" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn-primary" style="flex:1;">Log in</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script src="assets/tools.js"></script>
+<script>
+  document.querySelectorAll('[data-tab-link]').forEach((el) => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelector(`.tab-btn[data-tab="${el.dataset.tabLink}"]`)?.click();
+    });
+  });
+</script>
+</body>
+</html>
