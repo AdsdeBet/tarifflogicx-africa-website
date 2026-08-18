@@ -926,6 +926,81 @@ function onAccessChanged() {
   if (currentInfoKey) openInfoTopic(currentInfoKey);
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// FAQ — searches this site's own content (curated FAQ + Important
+// Information topic index) first; only falls back to Claude when nothing
+// here actually answers the question. Each answer is prepended as its own
+// card so a short back-and-forth session reads like a simple Q&A log.
+// ══════════════════════════════════════════════════════════════════════
+const faqInput = document.getElementById('faq-input');
+const faqAskBtn = document.getElementById('faq-ask-btn');
+const faqResults = document.getElementById('faq-results');
+
+faqAskBtn.addEventListener('click', askFaq);
+faqInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') askFaq(); });
+
+async function askFaq() {
+  const query = faqInput.value.trim();
+  if (query.length < 3) return;
+  faqAskBtn.disabled = true;
+  const card = document.createElement('div');
+  card.className = 'suggestion-card';
+  card.innerHTML = `<div class="result-desc" style="font-weight:700;">${escapeHtml(query)}</div><div class="loading-row"><span class="spinner"></span> Checking the site, then AI if needed…</div>`;
+  faqResults.prepend(card);
+  try {
+    const res = await fetch(`${API_BASE}/web/faq/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...accessHeaders() },
+      body: JSON.stringify({ query, deviceId: getDeviceId() }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 429) {
+        card.innerHTML = `<div class="result-desc" style="font-weight:700;">${escapeHtml(query)}</div><div class="error-box">${escapeHtml(data.error)} <a href="#" class="faq-unlock-link">Unlock full access</a>.</div>`;
+        card.querySelector('.faq-unlock-link')?.addEventListener('click', (e) => { e.preventDefault(); openAccessModal(); });
+      } else {
+        throw new Error(data.error || 'Could not get an answer — try again.');
+      }
+      return;
+    }
+    renderFaqAnswer(card, query, data);
+  } catch (err) {
+    card.innerHTML = `<div class="result-desc" style="font-weight:700;">${escapeHtml(query)}</div><div class="error-box">${escapeHtml(err.message || 'Something went wrong — try again.')}</div>`;
+  } finally {
+    faqAskBtn.disabled = false;
+    faqInput.value = '';
+  }
+}
+
+function renderFaqAnswer(card, query, data) {
+  if (data.source === 'faq') {
+    card.innerHTML = `
+      <div class="result-desc" style="font-weight:700;">${escapeHtml(query)}</div>
+      <div class="badge-row"><span class="badge badge-ok">From this site's FAQ</span></div>
+      <div class="suggestion-reasoning" style="font-size:13px; color:var(--text); margin-top:8px;">${escapeHtml(data.answer)}</div>
+      ${data.sourceUrl ? `<p style="margin-top:8px;"><a href="${escapeHtml(data.sourceUrl)}" target="_blank" rel="noopener" style="font-size:12px;">Official source ↗</a></p>` : ''}
+    `;
+  } else if (data.source === 'topic') {
+    card.innerHTML = `
+      <div class="result-desc" style="font-weight:700;">${escapeHtml(query)}</div>
+      <div class="badge-row"><span class="badge badge-ok">From Important Information</span>${data.isFree ? '' : '<span class="badge badge-warn">Subscriber/Pro</span>'}</div>
+      <div class="suggestion-reasoning" style="font-size:13px; color:var(--text); margin-top:8px;">This is covered in the <strong>${escapeHtml(data.title)}</strong> topic — ${escapeHtml(data.subtitle)}</div>
+      <span class="use-code-link" id="faq-topic-link">Open this topic &rarr;</span>
+    `;
+    card.querySelector('#faq-topic-link')?.addEventListener('click', () => {
+      showTab('info');
+      (infoIndexLoaded ? Promise.resolve() : loadInfoIndex()).then(() => openInfoTopic(data.key));
+    });
+  } else {
+    card.innerHTML = `
+      <div class="result-desc" style="font-weight:700;">${escapeHtml(query)}</div>
+      <div class="badge-row"><span class="badge confidence-medium">✨ AI-answered</span></div>
+      <div class="suggestion-reasoning" style="font-size:13px; color:var(--text); margin-top:8px;">${escapeHtml(data.answer)}</div>
+      <div class="hint" style="margin-top:8px;">${escapeHtml(data.disclaimer || '')}</div>
+    `;
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────
 // ?tab=info&topic=hazchem deep-links here from the static SEO preview
 // pages (info/<key>.html "Open in the free tools" button) straight into

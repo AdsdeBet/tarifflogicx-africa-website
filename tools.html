@@ -34,6 +34,7 @@
   <button class="tab-btn" data-tab="landed-cost"><span class="tab-icon">🧮</span><span class="tab-label">Landed Cost</span></button>
   <button class="tab-btn" data-tab="favourites"><span class="tab-icon">⭐</span><span class="tab-label">Favourites</span></button>
   <button class="tab-btn" data-tab="info"><span class="tab-icon">📚</span><span class="tab-label">Important Info</span></button>
+  <button class="tab-btn" data-tab="faq"><span class="tab-icon">❓</span><span class="tab-label">FAQ</span></button>
   <button class="tab-btn tab-btn-app" data-tab="get-app"><span class="tab-icon">📲</span><span class="tab-label">Get the App</span></button>
 </div>
 
@@ -138,6 +139,17 @@
   <div class="tab-panel" data-tab="info">
     <div class="ai-intro">📚 <strong>90+ topic compliance reference library.</strong> Browsing the topic list is always free. Opening a topic's full content needs a Subscriber plan or Pro pass — same as in the app, no free quota on these.</div>
     <div id="info-index">Loading…</div>
+  </div>
+
+  <!-- ── FAQ ────────────────────────────────────────────────────── -->
+  <div class="tab-panel" data-tab="faq">
+    <div class="ai-intro">❓ <strong>Ask a question.</strong> We'll answer from this site's own FAQ and reference library first — if nothing here covers it, AI answers instead (3 AI-answered questions free per day, same as AI Classify).</div>
+    <label class="field-label" for="faq-input">Your question</label>
+    <div class="search-row">
+      <input class="text-input" type="text" id="faq-input" placeholder="e.g. do I need a certificate of origin?" autocomplete="off">
+      <button class="btn-primary" id="faq-ask-btn" style="width:auto; padding:0 20px; flex-shrink:0;">Ask</button>
+    </div>
+    <div id="faq-results"></div>
   </div>
 
   <!-- ── Get the App ────────────────────────────────────────────── -->

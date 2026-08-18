@@ -46,8 +46,8 @@
   modal.id = 'tlxa-contact-modal';
   modal.innerHTML = `
     <div class="tlxa-contact-card">
-      <h3>Contact us</h3>
-      <p class="tlxa-contact-sub">Send a message straight from here — no email app required.</p>
+      <h3>Contact Us</h3>
+      <p class="tlxa-contact-sub">Please complete the form below and a member of our team will respond to your enquiry as soon as possible.</p>
       <form id="tlxa-contact-form">
         <label for="tlxa-contact-name">Name</label>
         <input type="text" id="tlxa-contact-name" required maxlength="200">
@@ -96,14 +96,14 @@
         body: JSON.stringify({ name, email, message }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Could not send your message — try again shortly.');
+      if (!res.ok) throw new Error(data.error || 'Your message could not be sent. Please try again shortly.');
       msgEl.className = 'tlxa-contact-msg success';
-      msgEl.textContent = "Thanks — your message has been sent. We'll get back to you soon.";
+      msgEl.textContent = 'Thank you. Your message has been received, and our team will respond as soon as possible.';
       form.querySelectorAll('input, textarea').forEach((el) => { el.value = ''; });
       setTimeout(closeModal, 2500);
     } catch (err) {
       msgEl.className = 'tlxa-contact-msg error';
-      msgEl.textContent = err.message || 'Something went wrong — try again, or email support@tarifflogicxafrica.co.za directly.';
+      msgEl.textContent = err.message || 'Your message could not be sent. Please try again, or email support@tarifflogicxafrica.co.za directly.';
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send';
