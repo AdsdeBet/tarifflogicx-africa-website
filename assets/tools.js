@@ -154,7 +154,13 @@ document.getElementById('buy-tiers').addEventListener('click', async (e) => {
   }
 });
 
-redeemForm.addEventListener('submit', (e) => {
+// The app's TLXA3 promo (see freemium_service.dart) — a plain launch code,
+// not a pre-signed token like admin-generated codes, so it needs its own
+// server round-trip (POST /web/redeem-launch-code) to actually mint one,
+// rather than being stored directly as if it already were a token.
+const LAUNCH_CODE = 'TLXA3';
+
+redeemForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const code = document.getElementById('redeem-code-input').value.trim();
   redeemError.style.display = 'none';
@@ -163,9 +169,31 @@ redeemForm.addEventListener('submit', (e) => {
     redeemError.style.display = 'block';
     return;
   }
-  // The code IS the token (see webAdminLogin.js generate-code) — nothing to
-  // look up server-side, just store it and let the next real request prove
-  // whether it's valid (a garbage paste simply won't unlock anything).
+
+  if (code.toUpperCase() === LAUNCH_CODE) {
+    try {
+      const res = await fetch(`${API_BASE}/web/redeem-launch-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, deviceId: getDeviceId() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not redeem that code.');
+      storeAccessToken(data.token, data.expiresInMs);
+      document.getElementById('redeem-code-input').value = '';
+      accessModal.style.display = 'none';
+      if (typeof onAccessChanged === 'function') onAccessChanged();
+    } catch (err) {
+      redeemError.textContent = err.message || 'Could not redeem that code — try again.';
+      redeemError.style.display = 'block';
+    }
+    return;
+  }
+
+  // Any other code IS the token itself (see webAdminLogin.js generate-code)
+  // — nothing to look up server-side, just store it and let the next real
+  // request prove whether it's valid (a garbage paste simply won't unlock
+  // anything).
   storeAccessToken(code, 14 * 24 * 60 * 60 * 1000); // upper bound; server's own expiry inside the token is what actually governs
   document.getElementById('redeem-code-input').value = '';
   accessModal.style.display = 'none';
