@@ -360,6 +360,42 @@
   white-space: nowrap;
 }
 
+/* ── Tariff detail: reference/compliance links, live checks ──────────── */
+.detail-ref-links { display: flex; flex-direction: column; gap: 8px; }
+.detail-ref-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+.detail-ref-link:hover { border-color: var(--app-primary); color: var(--app-primary-dark); }
+.detail-check-row { margin-top: 10px; }
+.detail-check-row .spinner { width: 13px; height: 13px; }
+.detail-sars-links { display: flex; flex-direction: column; gap: 8px; }
+.detail-sars-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+.detail-sars-link:hover { border-color: var(--app-primary); }
+.detail-sars-link strong { display: block; font-size: 13px; font-weight: 600; color: var(--text); }
+.detail-sars-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+
 .app-cta-inline {
   text-align: center;
   margin-top: 28px;

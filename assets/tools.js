@@ -624,7 +624,35 @@ function renderCodeDetail(code, container, opts) {
       ${prefs.length ? `<div class="lc-section-label">Preferential trade agreement rates</div>
         <div class="badge-row">${prefs.map(([n, r]) => `<span class="badge badge-ok">${escapeHtml(n)}: ${escapeHtml(r)}</span>`).join('')}</div>` : ''}
       ${code.permit_note ? `<div class="hint" style="margin-top:10px;">${escapeHtml(code.permit_note)}</div>` : ''}
-      <button class="btn-primary" id="use-for-landed-cost" style="margin-top:14px;">Calculate landed cost for this code</button>
+
+      <div class="lc-section-label">Reference &amp; compliance</div>
+      <div class="detail-ref-links">
+        <button type="button" class="detail-ref-link" data-topic="trade_agreements">📜 View all trade agreements</button>
+        <button type="button" class="detail-ref-link" data-topic="documentation_checklist">📄 Import &amp; export documents</button>
+        <button type="button" class="detail-ref-link" data-topic="hazchem">⚠️ Dangerous goods / HazChem check</button>
+      </div>
+
+      <div id="detail-itac-check" class="detail-check-row"><span class="spinner"></span> Checking ITAC control status…</div>
+      <div id="detail-hazchem-check" class="detail-check-row" style="display:none;"></div>
+
+      <div class="lc-section-label">Verify with SARS</div>
+      <div class="detail-sars-links">
+        <a href="https://www.sars.gov.za/wp-content/uploads/Legal/SCEA1964/Legal-LPrim-CE-Sch1P1Chpt1-to-99-Schedule-No-1-Part-1-Chapters-1-to-99.pdf" target="_blank" rel="noopener" class="detail-sars-link">
+          <span class="detail-sars-icon">📕</span>
+          <span><strong>Official SARS Tariff Book</strong><span class="hint" style="margin:1px 0 0;">Schedule 1, Part 1 — search for HS ${escapeHtml(code.hs_code)}</span></span>
+        </a>
+        <a href="https://www.sars.gov.za/legal-counsel/secondary-legislation/tariff-amendments/" target="_blank" rel="noopener" class="detail-sars-link">
+          <span class="detail-sars-icon">🔄</span>
+          <span><strong>Real-time tariff amendments</strong><span class="hint" style="margin:1px 0 0;">Published up to a day before each gazette</span></span>
+        </a>
+        <a href="https://www.sars.gov.za/legal-lprim-ce-schtb-index-to-tariff-book/" target="_blank" rel="noopener" class="detail-sars-link">
+          <span class="detail-sars-icon">📖</span>
+          <span><strong>Chapter ${escapeHtml(code.chapter || '')} index</strong><span class="hint" style="margin:1px 0 0;">Confirm this code's chapter placement</span></span>
+        </a>
+      </div>
+
+      <button class="btn-primary" id="use-for-landed-cost" style="margin-top:16px;">🧮 Calculate landed cost for this code</button>
+      <button class="btn-secondary" id="share-code-btn" style="width:100%; margin-top:8px;">📤 Share</button>
     </div>
   `;
   document.getElementById('use-for-landed-cost')?.addEventListener('click', () => {
@@ -636,6 +664,72 @@ function renderCodeDetail(code, container, opts) {
     if (backTab === 'favourites') renderFavourites();
     else if (backTab === 'home') closeChapter();
     else runSearch(searchInput.value.trim());
+  });
+  container.querySelectorAll('.detail-ref-link').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const topic = btn.dataset.topic;
+      showTab('info');
+      (infoIndexLoaded ? Promise.resolve() : loadInfoIndex()).then(() => openInfoTopic(topic));
+    });
+  });
+  document.getElementById('share-code-btn')?.addEventListener('click', () => shareCode(code));
+  loadItacAndHazchemChecks(code);
+}
+
+// Live checks shown on a tariff code's detail card — separate from the
+// gated Important Information reference articles the nav buttons above
+// link into; these are quick informational flags, free like the app's
+// equivalent (ItacControlCard / the chapter-flag check), not paywalled.
+async function loadItacAndHazchemChecks(code) {
+  const itacEl = document.getElementById('detail-itac-check');
+  const hazEl = document.getElementById('detail-hazchem-check');
+  try {
+    const res = await fetch(`${API_BASE}/web/itac-control/${encodeURIComponent(code.hs_code)}`);
+    const data = await res.json();
+    if (!itacEl) return;
+    if (data.import_control || data.export_control) {
+      const which = [data.import_control ? 'import' : null, data.export_control ? 'export' : null].filter(Boolean).join(' & ');
+      itacEl.innerHTML = `<span class="badge badge-warn">⚠️ ITAC ${which} control applies</span>`;
+    } else if (data.confirmed_exempt) {
+      itacEl.innerHTML = '<span class="badge badge-ok">✅ Confirmed exempt from ITAC control</span>';
+    } else {
+      itacEl.innerHTML = '<span class="badge badge-ok">✅ No ITAC control on record</span>';
+    }
+  } catch {
+    if (itacEl) itacEl.innerHTML = '';
+  }
+
+  if (!code.chapter) return;
+  try {
+    const res = await fetch(`${API_BASE}/web/hazchem-check/${encodeURIComponent(code.chapter)}`);
+    const data = await res.json();
+    if (hazEl && data.flagged) {
+      hazEl.style.display = 'block';
+      hazEl.innerHTML = `<span class="badge badge-warn">⚠️ Chapter ${escapeHtml(code.chapter)} is commonly flagged for HazChem${data.note ? ' — ' + escapeHtml(data.note) : ''}</span>`;
+    }
+  } catch { /* leave hidden */ }
+}
+
+function shareCode(code) {
+  const lines = [
+    `${code.hs_code} — ${code.description}`,
+    `General duty: ${dutyDisplay(code)}`,
+    `VAT: ${code.vat_applicable ? '15%' : 'Exempt'}`,
+    code.permit_required ? `Permit required: ${code.permit_authority || 'yes'}` : 'No permit required',
+    '',
+    `Full detail: https://tarifflogicxafrica.co.za/tools.html?tab=search`,
+  ];
+  const text = lines.join('\n');
+  if (navigator.share) {
+    navigator.share({ title: `TariffLogicX Africa — ${code.hs_code}`, text }).catch(() => {});
+    return;
+  }
+  navigator.clipboard?.writeText(text).then(() => {
+    const btn = document.getElementById('share-code-btn');
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.textContent = '✓ Copied to clipboard';
+    setTimeout(() => { btn.textContent = original; }, 1800);
   });
 }
 
