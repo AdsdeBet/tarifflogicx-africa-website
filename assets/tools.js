@@ -262,6 +262,214 @@ function dutyDisplay(code) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
+// FAVOURITES — client-side only (localStorage), mirrors the app's
+// Favourites screen closely enough for a public demo: no account, just
+// saved on this device/browser.
+// ══════════════════════════════════════════════════════════════════════
+function getFavourites() {
+  try { return JSON.parse(localStorage.getItem('tlxa_favourites') || '[]'); } catch { return []; }
+}
+function isFavourited(hsCode) {
+  return getFavourites().some((f) => f.hs_code === hsCode);
+}
+function toggleFavourite(code) {
+  const favs = getFavourites();
+  const idx = favs.findIndex((f) => f.hs_code === code.hs_code);
+  if (idx >= 0) { favs.splice(idx, 1); }
+  else { favs.unshift({ hs_code: code.hs_code, description: code.description, general_duty: code.general_duty, duty_formula: code.duty_formula, vat_applicable: code.vat_applicable, permit_required: code.permit_required, permit_authority: code.permit_authority }); }
+  localStorage.setItem('tlxa_favourites', JSON.stringify(favs));
+  return idx < 0; // true if now favourited
+}
+function starBtnHtml(hsCode) {
+  const on = isFavourited(hsCode);
+  return `<button type="button" class="fav-star ${on ? 'is-fav' : ''}" data-fav-code="${escapeHtml(hsCode)}" aria-label="Toggle favourite" title="Save to Favourites">${on ? '★' : '☆'}</button>`;
+}
+// Delegated click handler so it works for cards rendered anywhere/anytime.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.fav-star');
+  if (!btn) return;
+  e.stopPropagation();
+  const hsCode = btn.dataset.favCode;
+  const cached = getFavourites().find((f) => f.hs_code === hsCode);
+  const nowOn = toggleFavourite(cached || { hs_code: hsCode, description: btn.dataset.favDesc || '' });
+  document.querySelectorAll(`.fav-star[data-fav-code="${CSS.escape(hsCode)}"]`).forEach((el) => {
+    el.classList.toggle('is-fav', nowOn);
+    el.textContent = nowOn ? '★' : '☆';
+  });
+  if (document.querySelector('.tab-panel[data-tab="favourites"]')?.classList.contains('active')) renderFavourites();
+});
+
+const favouritesListEl = document.getElementById('favourites-list');
+document.querySelector('.tab-btn[data-tab="favourites"]').addEventListener('click', renderFavourites);
+
+function renderFavourites() {
+  const favs = getFavourites();
+  if (favs.length === 0) {
+    favouritesListEl.innerHTML = '<div class="hint" style="margin-top:16px;">No favourites yet — tap the ☆ on any search result or code detail to save it here.</div>';
+    return;
+  }
+  favouritesListEl.innerHTML = favs.map((c) => resultCardHtml(c)).join('');
+  favouritesListEl.querySelectorAll('.result-card').forEach((el, i) => {
+    el.addEventListener('click', (e) => { if (!e.target.closest('.fav-star')) openCodeDetailIn(favs[i].hs_code, favouritesListEl, 'favourites'); });
+  });
+}
+
+// Opens a code's full detail inside an arbitrary container (Home chapter
+// browse and Favourites both need this, not just the Search tab).
+async function openCodeDetailIn(hsCode, container, backTab) {
+  container.innerHTML = '<div class="loading-row"><span class="spinner"></span> Loading full detail…</div>';
+  try {
+    const code = await fetchCode(hsCode);
+    renderCodeDetail(code, container, { showBackToSearch: true, backTab });
+  } catch (err) {
+    container.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// HOME — chapter browse (98 HS chapters, sourced from
+// mobile/lib/data/hs_chapters.dart / SARS Schedule 1 Part 1) plus a quick
+// search shortcut that hands off to the Search tab.
+// ══════════════════════════════════════════════════════════════════════
+const HS_CHAPTERS = [
+  [1,'Live animals'],[2,'Meat and edible meat offal'],[3,'Fish and crustaceans, molluscs and other aquatic invertebrates'],
+  [4,"Dairy produce; birds' eggs; natural honey; edible products of animal origin, not elsewhere specified or included"],
+  [5,'Products of animal origin, not elsewhere specified or included'],
+  [6,'Live trees and other plants; bulbs, roots and the like; cut flowers and ornamental foliage'],
+  [7,'Edible vegetables and certain roots and tubers'],[8,'Edible fruit and nuts; peel of citrus fruit or melons'],
+  [9,'Coffee, tea, maté and spices'],[10,'Cereals'],
+  [11,'Products of the milling industry; malt; starches; inulin; wheat gluten'],
+  [12,'Oil seeds and oleaginous fruits; miscellaneous grains, seeds and fruit; industrial or medicinal plants; straw and fodder'],
+  [13,'Lac; gums, resins and other vegetable saps and extracts'],
+  [14,'Vegetable plaiting materials; vegetable products not elsewhere specified or included'],
+  [15,'Animal, vegetable or microbial fats and oils and their cleavage products; prepared edible fats; animal or vegetable waxes'],
+  [16,'Preparations of meat, of fish, of crustaceans, molluscs or other aquatic invertebrates, or of insects'],
+  [17,'Sugars and sugar confectionery'],[18,'Cocoa and cocoa preparations'],
+  [19,'Preparations of cereals, flour, starch or milk; pastrycooks products'],
+  [20,'Preparations of vegetables, fruit, nuts or other parts of plants'],[21,'Miscellaneous edible preparations'],
+  [22,'Beverages, spirits and vinegar'],[23,'Residues and waste from the food industries; prepared animal fodder'],
+  [24,'Tobacco and manufactured tobacco substitutes; products, whether or not containing nicotine, intended for inhalation without combustion; other nicotine containing products intended for the intake of nicotine into the human body'],
+  [25,'Salt; sulphur; earths and stone; plastering materials, lime and cement'],[26,'Ores, slag and ash'],
+  [27,'Mineral fuels, mineral oils and products of their distillation; bituminous substances; mineral waxes'],
+  [28,'Inorganic chemicals; organic or inorganic compounds of precious metals, of rare-earth metals, of radioactive elements or of isotopes'],
+  [29,'Organic chemicals'],[30,'Pharmaceutical products'],[31,'Fertilizers'],
+  [32,'Tanning or dyeing extracts; tannins and their derivatives; dyes, pigments and other colouring matter; paints and varnishes; putty and other mastics; inks'],
+  [33,'Essential oils and resinoids; perfumery, cosmetic or toilet preparations'],
+  [34,'Soap, organic surface-active agents, washing preparations, lubricating preparations, artificial waxes, prepared waxes, polishing or scouring preparations, candles and similar articles, modelling pastes, "dental waxes" and dental preparations with a basis of plaster'],
+  [35,'Albuminoidal substances; modified starches; glues; enzymes'],
+  [36,'Explosives; pyrotechnic products; matches; pyrophoric alloys; certain combustible preparations'],
+  [37,'Photographic or cinematographic goods'],[38,'Miscellaneous chemical products'],
+  [39,'Plastics and articles thereof'],[40,'Rubber and articles thereof'],
+  [41,'Raw hides and skins (other than furskins) and leather'],
+  [42,'Articles of leather; saddlery and harness; travel goods, handbags and similar containers; articles of animal gut (other than silk-worm gut)'],
+  [43,'Furskins and artificial fur; manufactures thereof'],[44,'Wood and articles of wood; wood charcoal'],
+  [45,'Cork and articles of cork'],
+  [46,'Manufactures of straw, of esparto or of other plaiting materials; basketware and wickerwork'],
+  [47,'Pulp of wood or of other fibrous cellulosic material; recovered (waste and scrap) paper or paperboard'],
+  [48,'Paper and paperboard; articles of paper pulp, of paper or of paperboard'],
+  [49,'Printed books, newspapers, pictures and other products of the printing industry; manuscripts, typescripts and plans'],
+  [50,'Silk'],[51,'Wool, fine or coarse animal hair; horsehair yarn and woven fabric'],[52,'Cotton'],
+  [53,'Other vegetable textile fibres; paper yarn and woven fabrics of paper yarn'],
+  [54,'Man-made filaments; strip and the like of man-made textile materials'],[55,'Man-made staple fibres'],
+  [56,'Wadding, felt and nonwovens; special yarns; twine, cordage, ropes and cables and articles thereof'],
+  [57,'Carpets and other textile floor coverings'],
+  [58,'Special woven fabrics; tufted textile fabrics; lace; tapestries; trimmings; embroidery'],
+  [59,'Impregnated, coated, covered or laminated textile fabrics; textile articles of a kind suitable for industrial use'],
+  [60,'Knitted or crocheted fabrics'],[61,'Articles of apparel and clothing accessories, knitted or crocheted'],
+  [62,'Articles of apparel and clothing accessories, not knitted or crocheted'],
+  [63,'Other made up textile articles; sets; worn clothing and worn textile articles; rags'],
+  [64,'Footwear, gaiters and the like; parts of such articles'],[65,'Headgear and parts thereof'],
+  [66,'Umbrellas, sun umbrellas, walking-sticks, seat-sticks, whips, riding-crops and parts thereof'],
+  [67,'Prepared feathers and down and articles made of feathers or of down; artificial flowers; articles of human hair'],
+  [68,'Articles of stone, plaster, cement, asbestos, mica or similar materials'],[69,'Ceramic products'],
+  [70,'Glass and glassware'],
+  [71,'Natural or cultured pearls, precious or semi-precious stones, precious metals, metals clad with precious metal and articles thereof; imitation jewelery; coin'],
+  [72,'Iron and steel'],[73,'Articles of iron or steel'],[74,'Copper and articles thereof'],
+  [75,'Nickel and articles thereof'],[76,'Aluminium and articles thereof'],[78,'Lead and articles thereof'],
+  [79,'Zinc and articles thereof'],[80,'Tin and articles thereof'],[81,'Other base metals; cermets; articles thereof'],
+  [82,'Tools, implements, cutlery, spoons and forks, of base metal; parts thereof of base metal'],
+  [83,'Miscellaneous articles of base metal'],
+  [84,'Nuclear reactors, boilers, machinery and mechanical appliances; parts thereof'],
+  [85,'Electrical machinery and equipment and parts thereof; sound recorders and reproducers, television image and sound recorders and reproducers, and parts and accessories of such articles'],
+  [86,'Railway or tramway locomotives, rolling-stock and parts thereof; railway or tramway track fixtures and fittings and parts thereof; mechanical (including electro-mechanical) traffic signalling equipment of all kinds'],
+  [87,'Vehicles (excluding railway or tramway rolling-stock), and parts and accessories thereof'],
+  [88,'Aircraft, spacecraft, and parts thereof'],[89,'Ships, boats and floating structures'],
+  [90,'Optical, photographic, cinematographic, measuring, checking, precision, medical or surgical instruments and apparatus; parts and accessories thereof'],
+  [91,'Clocks and watches and parts thereof'],[92,'Musical instruments; part and accessories of such articles'],
+  [93,'Arms and ammunition; parts and accessories thereof'],
+  [94,'Furniture; bedding, mattresses, mattress supports, cushions and similar stuffed furnishings; luminaires and lighting fittings, not elsewhere specified or included; illuminated signs, illuminated name-plates and the like; prefabricated buildings'],
+  [95,'Toys, games and sports requisites; parts and accessories thereof'],[96,'Miscellaneous manufactured articles'],
+  [97,'Works of art, collectors pieces and antiques'],[98,'Original equipment components'],
+  [99,'Miscellaneous classification provisions'],
+];
+
+const homeSearchInput = document.getElementById('home-search-input');
+const homeChapterList = document.getElementById('home-chapter-list');
+const homeChapterDetail = document.getElementById('home-chapter-detail');
+
+homeSearchInput.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const q = homeSearchInput.value.trim();
+  if (!q) return;
+  showTab('search');
+  searchInput.value = q;
+  searchInput.dispatchEvent(new Event('input'));
+});
+
+function renderHomeChapterList() {
+  homeChapterList.innerHTML = HS_CHAPTERS.map(([n, title]) => `
+    <div class="chapter-row" data-chapter="${n}">
+      <span class="chapter-num">${String(n).padStart(2, '0')}</span>
+      <span class="chapter-title">${escapeHtml(title)}</span>
+      <span class="chapter-arrow">›</span>
+    </div>
+  `).join('');
+  homeChapterList.querySelectorAll('.chapter-row').forEach((el) => {
+    el.addEventListener('click', () => openChapter(Number(el.dataset.chapter)));
+  });
+}
+renderHomeChapterList();
+
+async function openChapter(n) {
+  homeChapterList.style.display = 'none';
+  homeChapterDetail.style.display = 'block';
+  const title = HS_CHAPTERS.find(([num]) => num === n)?.[1] || '';
+  homeChapterDetail.innerHTML = `
+    <button class="btn-secondary" id="chapter-back-btn">&larr; All chapters</button>
+    <div class="lc-section-label" style="margin-top:14px;">Chapter ${String(n).padStart(2, '0')} — ${escapeHtml(title)}</div>
+    <div class="loading-row"><span class="spinner"></span> Loading codes…</div>
+  `;
+  document.getElementById('chapter-back-btn').addEventListener('click', closeChapter);
+  try {
+    const res = await fetch(`${API_BASE}/web/chapter/${String(n).padStart(2, '0')}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not load that chapter.');
+    const results = data.results || [];
+    homeChapterDetail.innerHTML = `
+      <button class="btn-secondary" id="chapter-back-btn">&larr; All chapters</button>
+      <div class="lc-section-label" style="margin-top:14px;">Chapter ${String(n).padStart(2, '0')} — ${escapeHtml(title)}</div>
+      ${results.length === 0
+        ? '<div class="hint" style="margin-top:10px;">No codes loaded for this chapter yet.</div>'
+        : `<p class="hint" style="margin:2px 0 10px;">${results.length} code${results.length === 1 ? '' : 's'}</p>` + results.map((c) => resultCardHtml(c)).join('')}
+    `;
+    document.getElementById('chapter-back-btn').addEventListener('click', closeChapter);
+    homeChapterDetail.querySelectorAll('.result-card').forEach((el, i) => {
+      el.addEventListener('click', (e) => { if (!e.target.closest('.fav-star')) openCodeDetailIn(results[i].hs_code, homeChapterDetail, 'home'); });
+    });
+  } catch (err) {
+    homeChapterDetail.innerHTML = `
+      <button class="btn-secondary" id="chapter-back-btn">&larr; All chapters</button>
+      <div class="error-box" style="margin-top:14px;">${escapeHtml(err.message)}</div>
+    `;
+    document.getElementById('chapter-back-btn').addEventListener('click', closeChapter);
+  }
+}
+function closeChapter() {
+  homeChapterDetail.style.display = 'none';
+  homeChapterList.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════════════════
 // SEARCH
 // ══════════════════════════════════════════════════════════════════════
 const searchInput = document.getElementById('search-input');
@@ -311,7 +519,10 @@ function resultCardHtml(c) {
   if (c.permit_required) badges.push(`<span class="badge badge-warn">Permit: ${escapeHtml(c.permit_authority || 'required')}</span>`);
   else badges.push('<span class="badge badge-ok">No permit</span>');
   return `<div class="result-card">
-    <span class="result-code">${escapeHtml(c.hs_code)}</span>
+    <div class="result-card-top">
+      <span class="result-code">${escapeHtml(c.hs_code)}</span>
+      ${starBtnHtml(c.hs_code)}
+    </div>
     <div class="result-desc">${escapeHtml(c.description)}</div>
     <div class="badge-row">${badges.join('')}</div>
   </div>`;
@@ -343,9 +554,12 @@ function renderCodeDetail(code, container, opts) {
   if (code.afcfta_duty) prefs.push(['AfCFTA', code.afcfta_duty]);
 
   container.innerHTML = `
-    ${opts?.showBackToSearch ? '<button class="btn-secondary" id="back-to-search">&larr; Back to results</button>' : ''}
+    ${opts?.showBackToSearch ? '<button class="btn-secondary" id="back-to-search">&larr; Back</button>' : ''}
     <div class="result-card" style="cursor:default; margin-top:14px;">
-      <span class="result-code">${escapeHtml(code.hs_code)}</span>
+      <div class="result-card-top">
+        <span class="result-code">${escapeHtml(code.hs_code)}</span>
+        ${starBtnHtml(code.hs_code)}
+      </div>
       <div class="result-desc">${escapeHtml(code.description)}</div>
       <div class="badge-row">
         <span class="badge badge-duty">General duty: ${escapeHtml(dutyDisplay(code))}</span>
@@ -362,7 +576,12 @@ function renderCodeDetail(code, container, opts) {
     setLandedCostCode(code);
     showTab('landed-cost');
   });
-  document.getElementById('back-to-search')?.addEventListener('click', () => runSearch(searchInput.value.trim()));
+  document.getElementById('back-to-search')?.addEventListener('click', () => {
+    const backTab = opts?.backTab;
+    if (backTab === 'favourites') renderFavourites();
+    else if (backTab === 'home') closeChapter();
+    else runSearch(searchInput.value.trim());
+  });
 }
 
 function escapeHtml(s) {

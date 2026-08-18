@@ -28,16 +28,31 @@
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" data-tab="search">🔍 Search</button>
-  <button class="tab-btn" data-tab="ai-classify">✨ AI Classify</button>
-  <button class="tab-btn" data-tab="landed-cost">🧮 Landed Cost</button>
-  <button class="tab-btn" data-tab="info">📚 Important Info</button>
+  <button class="tab-btn active" data-tab="home"><span class="tab-icon">🏠</span><span class="tab-label">Home</span></button>
+  <button class="tab-btn" data-tab="search"><span class="tab-icon">🔍</span><span class="tab-label">Search</span></button>
+  <button class="tab-btn" data-tab="ai-classify"><span class="tab-icon">✨</span><span class="tab-label">AI Classify</span></button>
+  <button class="tab-btn" data-tab="landed-cost"><span class="tab-icon">🧮</span><span class="tab-label">Landed Cost</span></button>
+  <button class="tab-btn" data-tab="favourites"><span class="tab-icon">⭐</span><span class="tab-label">Favourites</span></button>
+  <button class="tab-btn" data-tab="info"><span class="tab-icon">📚</span><span class="tab-label">Important Info</span></button>
+  <button class="tab-btn tab-btn-app" data-tab="get-app"><span class="tab-icon">📲</span><span class="tab-label">Get the App</span></button>
 </div>
 
 <div class="tools-body">
 
+  <!-- ── Home ───────────────────────────────────────────────────── -->
+  <div class="tab-panel active" data-tab="home">
+    <div class="home-search-shortcut">
+      <label class="field-label" for="home-search-input">Quick search</label>
+      <input class="text-input" type="text" id="home-search-input" placeholder="e.g. copper, frozen chicken, 7318.15" autocomplete="off">
+    </div>
+    <div class="lc-section-label" style="margin-top:22px;">Browse by HS chapter</div>
+    <p class="hint" style="margin-bottom:10px;">All 98 chapters of the SARS Customs Tariff Schedule — tap one to see every code inside it.</p>
+    <div id="home-chapter-list"></div>
+    <div id="home-chapter-detail" style="display:none;"></div>
+  </div>
+
   <!-- ── Search ─────────────────────────────────────────────────── -->
-  <div class="tab-panel active" data-tab="search">
+  <div class="tab-panel" data-tab="search">
     <label class="field-label" for="search-input">Product name or HS code</label>
     <div class="search-row">
       <input class="text-input" type="text" id="search-input" placeholder="e.g. copper, frozen chicken, 7318.15" autocomplete="off">
@@ -113,15 +128,45 @@
     <div id="lc-results"></div>
   </div>
 
+  <!-- ── Favourites ─────────────────────────────────────────────── -->
+  <div class="tab-panel" data-tab="favourites">
+    <div class="ai-intro">⭐ <strong>Saved on this device.</strong> Tap the star on any tariff code to save it here — stored locally in your browser, just like the app's Favourites screen.</div>
+    <div id="favourites-list"></div>
+  </div>
+
   <!-- ── Important Information ─────────────────────────────────────── -->
   <div class="tab-panel" data-tab="info">
     <div class="ai-intro">📚 <strong>90+ topic compliance reference library.</strong> Browsing the topic list is always free. Opening a topic's full content needs a Subscriber plan or Pro pass — same as in the app, no free quota on these.</div>
     <div id="info-index">Loading…</div>
   </div>
 
-  <div class="app-cta-inline">
-    Like what you see? The app adds offline lookups, barcode scan, favourites, multi-currency landed cost, shipment log, and the full 90+ topic compliance reference library.<br>
-    <a href="https://play.google.com/store/apps/details?id=za.co.tarifflogicxafrica.app" target="_blank" rel="noopener">Get it on Google Play →</a>
+  <!-- ── Get the App ────────────────────────────────────────────── -->
+  <div class="tab-panel" data-tab="get-app">
+    <div class="app-promo-hero">
+      <img src="assets/logo.png" alt="TariffLogicX Africa app icon" class="app-promo-icon">
+      <h2>This website is the free preview. The app is the full tool.</h2>
+      <p>Same real SARS tariff data, AI classification, and landed cost formula — plus everything below that only makes sense on a phone.</p>
+    </div>
+
+    <div class="app-feature-grid">
+      <div class="app-feature"><span class="app-feature-icon">📡</span><div><strong>Works offline</strong><p>Full tariff database on-device — search and calculate with no signal, at the port or in the warehouse.</p></div></div>
+      <div class="app-feature"><span class="app-feature-icon">📷</span><div><strong>Barcode &amp; label scan</strong><p>Point the camera at a product to jump straight to a likely HS code.</p></div></div>
+      <div class="app-feature"><span class="app-feature-icon">💱</span><div><strong>Multi-currency landed cost</strong><p>Quote in USD, EUR, GBP, CNY and more — the website's calculator is ZAR-only.</p></div></div>
+      <div class="app-feature"><span class="app-feature-icon">📦</span><div><strong>Shipment log</strong><p>Save every calculation against a shipment reference and revisit it later.</p></div></div>
+      <div class="app-feature"><span class="app-feature-icon">🔔</span><div><strong>Unlimited searches &amp; AI classifications</strong><p>No 3-a-day free cap on a Subscriber plan or Pro pass — enforced the same way, just without the browser limits.</p></div></div>
+      <div class="app-feature"><span class="app-feature-icon">📶</span><div><strong>Faster, native feel</strong><p>No page reloads, no browser chrome — built for repeat daily use.</p></div></div>
+    </div>
+
+    <div class="app-store-badges">
+      <a href="https://play.google.com/store/apps/details?id=za.co.tarifflogicxafrica.app" target="_blank" rel="noopener" class="store-badge-link">
+        <span class="store-badge-icon">▶</span>
+        <span><span class="store-badge-sub">GET IT ON</span><span class="store-badge-main">Google Play</span></span>
+      </a>
+      <span class="store-badge-link store-badge-soon" aria-disabled="true">
+        <span class="store-badge-icon"></span>
+        <span><span class="store-badge-sub">Coming soon to the</span><span class="store-badge-main">App Store</span></span>
+      </span>
+    </div>
   </div>
 
 </div>

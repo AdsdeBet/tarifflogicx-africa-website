@@ -35,23 +35,37 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.tab-bar::-webkit-scrollbar { display: none; }
 .tab-btn {
-  flex: 1;
+  flex: 1 0 auto;
+  min-width: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
   border: none;
   background: none;
-  padding: 14px 8px;
-  font-size: 13px;
+  padding: 10px 10px 8px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--muted);
   cursor: pointer;
   border-bottom: 3px solid transparent;
+  white-space: nowrap;
 }
+.tab-icon { font-size: 18px; line-height: 1; }
+.tab-label { line-height: 1.1; }
 .tab-btn.active {
   color: var(--app-primary-dark);
   border-bottom-color: var(--app-primary);
 }
 .tab-btn:hover { color: var(--app-primary-dark); }
+.tab-btn-app { color: var(--app-primary-dark); }
+.tab-btn-app .tab-icon { filter: none; }
 
 .tools-body {
   max-width: 640px;
@@ -311,6 +325,95 @@
 }
 .app-cta-inline a { font-weight: 700; }
 
+/* ── Result card star / favourite toggle ──────────────────────────── */
+.result-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.result-card-top .result-code { margin-bottom: 0; }
+.fav-star {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--border);
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+.fav-star.is-fav { color: #E0A72C; }
+.fav-star:hover { color: #E0A72C; }
+
+/* ── Home tab ──────────────────────────────────────────────────────── */
+.home-search-shortcut { margin-bottom: 4px; }
+.chapter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+.chapter-row:hover { border-color: var(--app-primary); }
+.chapter-num {
+  flex-shrink: 0;
+  background: var(--brand-light);
+  color: var(--app-primary-dark);
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.chapter-title { flex: 1; font-size: 13px; line-height: 1.4; color: var(--text); }
+.chapter-arrow { color: var(--muted); font-size: 18px; flex-shrink: 0; }
+
+/* ── Favourites tab ────────────────────────────────────────────────── */
+#favourites-list .result-card { cursor: pointer; }
+
+/* ── Get the App tab ───────────────────────────────────────────────── */
+.app-promo-hero { text-align: center; padding: 8px 4px 22px; }
+.app-promo-icon { width: 64px; height: 64px; border-radius: 16px; margin-bottom: 12px; }
+.app-promo-hero h2 { font-size: 18px; margin: 0 0 8px; color: var(--app-primary-dark); }
+.app-promo-hero p { font-size: 13px; color: var(--muted); max-width: 440px; margin: 0 auto; line-height: 1.5; }
+.app-feature-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.app-feature {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.app-feature-icon { font-size: 22px; flex-shrink: 0; line-height: 1.3; }
+.app-feature strong { font-size: 13.5px; color: var(--text); display: block; margin-bottom: 3px; }
+.app-feature p { font-size: 12.5px; color: var(--muted); margin: 0; line-height: 1.5; }
+.app-store-badges {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+.store-badge-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #000;
+  color: #fff;
+  border-radius: 10px;
+  padding: 9px 16px 9px 14px;
+  text-decoration: none;
+}
+.store-badge-icon { font-size: 20px; }
+.store-badge-sub { display: block; font-size: 9.5px; opacity: 0.85; line-height: 1.2; }
+.store-badge-main { display: block; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.store-badge-soon { opacity: 0.55; cursor: default; }
+
 @media (max-width: 480px) {
   .search-row { flex-direction: column; }
+}
+@media (min-width: 560px) {
+  .app-feature-grid { grid-template-columns: 1fr 1fr; }
 }
