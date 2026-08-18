@@ -514,7 +514,7 @@ searchInput.addEventListener('input', () => {
 async function runSearch(q) {
   searchResults.innerHTML = '<div class="loading-row"><span class="spinner"></span> Searching the real SARS schedule…</div>';
   try {
-    const res = await fetch(`${API_BASE}/web/search?q=${encodeURIComponent(q)}&deviceId=${encodeURIComponent(getDeviceId())}`, { headers: accessHeaders() });
+    const res = await fetch(`${API_BASE}/web/search?q=${encodeURIComponent(q)}&limit=30&deviceId=${encodeURIComponent(getDeviceId())}`, { headers: accessHeaders() });
     const data = await res.json();
     if (!res.ok) {
       if (res.status === 429) {
@@ -562,14 +562,41 @@ async function openCodeDetail(hsCode) {
     const code = await fetchCode(hsCode);
     renderCodeDetail(code, searchResults, { showBackToSearch: true });
   } catch (err) {
-    searchResults.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
+    renderCodeLookupError(err, searchResults, () => runSearch(searchInput.value.trim()));
   }
+}
+
+// Shared by Search and AI Classify's "look up this code" click — when the
+// requested code turns out to be a heading rather than a real dutiable
+// line (see fetchCode), show the actual sibling lines instead of a dead
+// end error.
+function renderCodeLookupError(err, container, onBack) {
+  if (err.siblings && err.siblings.length) {
+    container.innerHTML = `
+      <button class="btn-secondary" id="lookup-error-back">&larr; Back</button>
+      <div class="hint" style="margin:14px 0 4px;">That's not a specific tariff line on its own — here's what SARS actually lists under it:</div>
+      ${err.siblings.map((c) => resultCardHtml(c)).join('')}
+    `;
+    document.getElementById('lookup-error-back')?.addEventListener('click', onBack);
+    container.querySelectorAll('.result-card').forEach((el, i) => {
+      el.addEventListener('click', (e) => { if (!e.target.closest('.fav-star')) openCodeDetail(err.siblings[i].hs_code); });
+    });
+    return;
+  }
+  container.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
 }
 
 async function fetchCode(hsCode) {
   const res = await fetch(`${API_BASE}/web/tariff-data/${encodeURIComponent(hsCode)}`, { headers: accessHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Could not load that code.');
+  if (!res.ok) {
+    const err = new Error(data.error || 'Could not load that code.');
+    // Set when the requested code is a heading (e.g. AI Classify suggesting
+    // "0407.21") rather than one of the real dutiable leaf lines under it
+    // ("0407.21.10"/"0407.21.90") — the real options, not a dead end.
+    if (data.siblings) err.siblings = data.siblings;
+    throw err;
+  }
   return data;
 }
 
@@ -679,7 +706,12 @@ function renderClassifyResults(suggestions, disclaimer) {
         showTab('search');
         renderCodeDetail(code, searchResults, { showBackToSearch: false });
       } catch (err) {
-        el.textContent = 'Could not load — try Search instead.';
+        if (err.siblings && err.siblings.length) {
+          showTab('search');
+          renderCodeLookupError(err, searchResults, () => runSearch(searchInput.value.trim()));
+        } else {
+          el.textContent = 'Could not load — try Search instead.';
+        }
       }
     });
   });
