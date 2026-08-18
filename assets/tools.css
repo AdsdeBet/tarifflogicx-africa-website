@@ -360,6 +360,20 @@
   white-space: nowrap;
 }
 
+/* ── Important Information: generic topic renderer ────────────────────
+   Matches the tariff detail card's boxed-sections look (approved 2026-08-18)
+   — each top-level entry (a warehouse type, a licensing step, an FAQ item)
+   gets its own bordered card instead of running into the next one. Forex
+   has its own dedicated styles above and is untouched by this. */
+.info-item-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 14px;
+}
+.info-item-card:first-child { margin-top: 0; }
+
 /* ── Tariff detail: reference/compliance links, live checks ──────────── */
 .detail-ref-links { display: flex; flex-direction: column; gap: 12px; }
 .detail-ref-link {

@@ -1181,29 +1181,41 @@ function renderForexContent(data) {
   `;
 }
 
+// Generic renderer for the ~38 non-forex Important Information topics —
+// each has a differently-shaped JSON structure (flat arrays, nested
+// groups, {id, step, detail}-style sequences), so this walks whatever
+// comes back rather than hand-building 38 bespoke layouts. Forex has its
+// own dedicated renderForexContent() and is untouched by this.
 function renderJsonAsHtml(value, depth = 0) {
   if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return `<p style="font-size:13px; line-height:1.6; margin:4px 0;">${escapeHtml(value)}</p>`;
+  if (typeof value === 'string') return `<p style="font-size:13px; line-height:1.7; margin:6px 0;">${escapeHtml(value)}</p>`;
   if (typeof value === 'number' || typeof value === 'boolean') return `<span>${escapeHtml(String(value))}</span>`;
   if (Array.isArray(value)) {
-    return value.map((v) => `<div style="margin:${depth === 0 ? '14px' : '6px'} 0 ${depth === 0 ? '14px' : '6px'} ${depth > 0 ? '14px' : '0'}; ${depth === 0 ? 'padding-top:12px; border-top:1px solid #F1EEE8;' : ''}">${renderJsonAsHtml(v, depth + 1)}</div>`).join('');
+    if (depth === 0) {
+      // Each top-level array entry (a warehouse type, a licensing step, an
+      // FAQ item...) gets its own bordered card with real spacing between
+      // entries, instead of a thin divider line — the difference between a
+      // scannable list and a wall of text.
+      return value.map((v) => `<div class="info-item-card">${renderJsonAsHtml(v, depth + 1)}</div>`).join('');
+    }
+    return value.map((v) => `<div style="margin:8px 0 8px 14px;">${renderJsonAsHtml(v, depth + 1)}</div>`).join('');
   }
   if (typeof value === 'object') {
-    const looksLikeALink = typeof value.url === 'string';
     return Object.entries(value).map(([k, v]) => {
+      if (k === 'id') return ''; // internal slug (e.g. "bond-store") — not meant for display
       if (k === 'url' || k === 'source_url') {
-        return v ? `<p style="margin:4px 0;"><a href="${escapeHtml(v)}" target="_blank" rel="noopener" style="font-size:12px;">Official source ↗</a></p>` : '';
+        return v ? `<p style="margin:10px 0 0;"><a href="${escapeHtml(v)}" target="_blank" rel="noopener" style="font-size:12px;">Official source ↗</a></p>` : '';
       }
       if (v === null || v === undefined || v === '') return '';
       const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      const isTitleish = /title|heading|name/i.test(k) && typeof v === 'string';
+      const isTitleish = /title|heading|name|^step$/i.test(k) && typeof v === 'string';
       if (isTitleish) {
-        return `<div style="font-weight:700; font-size:${depth <= 1 ? '13.5px' : '13px'}; margin-top:${depth === 0 ? '0' : '8px'};">${escapeHtml(v)}</div>`;
+        return `<div style="font-weight:700; font-size:${depth <= 1 ? '14px' : '13px'}; color:var(--app-primary-dark); line-height:1.4; margin-top:${depth === 0 ? '0' : '8px'}; margin-bottom:6px;">${escapeHtml(v)}</div>`;
       }
       if (typeof v === 'object') {
-        return `<div style="margin-top:6px;"><span style="font-size:10.5px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:0.4px;">${escapeHtml(label)}</span>${renderJsonAsHtml(v, depth + 1)}</div>`;
+        return `<div class="lc-section-label" style="margin-top:${depth === 0 ? '28px' : '18px'};">${escapeHtml(label)}</div>${renderJsonAsHtml(v, depth + 1)}`;
       }
-      return `<p style="font-size:12.5px; margin:3px 0; line-height:1.5;"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(v))}</p>`;
+      return `<p style="font-size:12.5px; margin:6px 0; line-height:1.6;"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(v))}</p>`;
     }).join('');
   }
   return '';
