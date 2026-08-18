@@ -21,6 +21,26 @@ body {
 a { color: var(--brand); }
 img { max-width: 100%; }
 
+/* ── Brand watermark ───────────────────────────────────────────────────
+   Fixed, low-opacity logo behind every page/tab — url() resolves relative
+   to this stylesheet's own location (assets/style.css), so it's correct
+   whether the including page is at the site root or one level down in
+   info/. Uses ::before rather than body's own background so it can carry
+   its own opacity independent of body's actual (opaque) background. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('logo.png');
+  background-repeat: no-repeat;
+  background-position: center 30vh;
+  background-size: min(480px, 70vw);
+  opacity: 0.05;
+}
+body > * { position: relative; z-index: 1; }
+
 /* ── Nav ─────────────────────────────────────────────────────────────── */
 header.site-nav {
   background: var(--brand-dark);
