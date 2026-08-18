@@ -1191,24 +1191,36 @@ function renderJsonAsHtml(value, depth = 0) {
   if (typeof value === 'string') return `<p style="font-size:13px; line-height:1.7; margin:6px 0;">${escapeHtml(value)}</p>`;
   if (typeof value === 'number' || typeof value === 'boolean') return `<span>${escapeHtml(String(value))}</span>`;
   if (Array.isArray(value)) {
-    if (depth === 0) {
-      // Each top-level array entry (a warehouse type, a licensing step, an
-      // FAQ item...) gets its own bordered card with real spacing between
-      // entries, instead of a thin divider line — the difference between a
-      // scannable list and a wall of text.
+    // Box every array of *objects* (a warehouse type, an Incoterm, a
+    // licensing step...) regardless of nesting depth — nearly every topic's
+    // real shape is { version, disclaimer, someGroup: [...] }, so the
+    // interesting array is always one level inside the root object, never
+    // literally depth 0. A plain array of strings/numbers stays a light
+    // indented list instead of getting boxed.
+    const itemsAreObjects = value.length > 0 && value[0] !== null && typeof value[0] === 'object' && !Array.isArray(value[0]);
+    if (itemsAreObjects) {
       return value.map((v) => `<div class="info-item-card">${renderJsonAsHtml(v, depth + 1)}</div>`).join('');
     }
     return value.map((v) => `<div style="margin:8px 0 8px 14px;">${renderJsonAsHtml(v, depth + 1)}</div>`).join('');
   }
   if (typeof value === 'object') {
-    return Object.entries(value).map(([k, v]) => {
+    // {code, name} pairs (Incoterms: "EXW" + "Ex Works", etc.) read as one
+    // acronym-plus-explanation header rather than two separately-weighted
+    // fields — this is the shape "bold the acronym, explanation under it"
+    // was actually asking for.
+    const hasCodeName = typeof value.code === 'string' && typeof value.name === 'string';
+    const codeNameHeader = hasCodeName
+      ? `<div style="font-weight:700; font-size:15px; color:var(--app-primary-dark); line-height:1.4; margin-bottom:8px;">${escapeHtml(value.code)} <span style="font-weight:600; color:var(--text);">— ${escapeHtml(value.name)}</span></div>`
+      : '';
+    return codeNameHeader + Object.entries(value).map(([k, v]) => {
       if (k === 'id') return ''; // internal slug (e.g. "bond-store") — not meant for display
+      if (hasCodeName && (k === 'code' || k === 'name')) return ''; // already rendered together above
       if (k === 'url' || k === 'source_url') {
         return v ? `<p style="margin:10px 0 0;"><a href="${escapeHtml(v)}" target="_blank" rel="noopener" style="font-size:12px;">Official source ↗</a></p>` : '';
       }
       if (v === null || v === undefined || v === '') return '';
       const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      const isTitleish = /title|heading|name|^step$/i.test(k) && typeof v === 'string';
+      const isTitleish = !hasCodeName && /title|heading|name|^step$/i.test(k) && typeof v === 'string';
       if (isTitleish) {
         return `<div style="font-weight:700; font-size:${depth <= 1 ? '14px' : '13px'}; color:var(--app-primary-dark); line-height:1.4; margin-top:${depth === 0 ? '0' : '8px'}; margin-bottom:6px;">${escapeHtml(v)}</div>`;
       }
