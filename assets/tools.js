@@ -610,12 +610,12 @@ function renderCodeDetail(code, container, opts) {
 
   container.innerHTML = `
     ${opts?.showBackToSearch ? '<button class="btn-secondary" id="back-to-search">&larr; Back</button>' : ''}
-    <div class="result-card" style="cursor:default; margin-top:14px;">
-      <div class="result-card-top">
+    <div class="result-card" style="cursor:default; margin-top:14px; padding:22px;">
+      <div class="result-card-top" style="margin-bottom:10px;">
         <span class="result-code">${escapeHtml(code.hs_code)}</span>
         ${starBtnHtml(code.hs_code)}
       </div>
-      <div class="result-desc">${escapeHtml(code.description)}</div>
+      <div class="result-desc" style="margin-bottom:14px;">${escapeHtml(code.description)}</div>
       <div class="badge-row">
         <span class="badge badge-duty">General duty: ${escapeHtml(dutyDisplay(code))}</span>
         <span class="badge badge-vat">VAT: ${code.vat_applicable ? '15%' : 'Exempt'}</span>
@@ -623,7 +623,7 @@ function renderCodeDetail(code, container, opts) {
       </div>
       ${prefs.length ? `<div class="lc-section-label">Preferential trade agreement rates</div>
         <div class="badge-row">${prefs.map(([n, r]) => `<span class="badge badge-ok">${escapeHtml(n)}: ${escapeHtml(r)}</span>`).join('')}</div>` : ''}
-      ${code.permit_note ? `<div class="hint" style="margin-top:10px;">${escapeHtml(code.permit_note)}</div>` : ''}
+      ${code.permit_note ? `<div class="hint" style="margin-top:14px; line-height:1.6;">${escapeHtml(code.permit_note)}</div>` : ''}
 
       <div class="lc-section-label">Reference &amp; compliance</div>
       <div class="detail-ref-links">
@@ -651,11 +651,11 @@ function renderCodeDetail(code, container, opts) {
         </a>
       </div>
 
-      <div style="display:flex; gap:8px; margin-top:16px;">
+      <div style="display:flex; gap:10px; margin-top:24px;">
         <button class="btn-secondary" id="export-pdf-btn" style="flex:1;">📥 Export PDF</button>
         <button class="btn-secondary" id="share-code-btn" style="flex:1;">📤 Share</button>
       </div>
-      <div style="display:flex; gap:8px; margin-top:8px;">
+      <div style="display:flex; gap:10px; margin-top:10px;">
         <button class="btn-primary" id="use-for-landed-cost" style="flex:1;">🧮 Landed Cost</button>
         <button class="btn-secondary" id="log-shipment-btn" style="flex:1;">📦 Log Shipment</button>
       </div>
