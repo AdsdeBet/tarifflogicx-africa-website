@@ -160,8 +160,8 @@
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 14px;
-  margin-top: 10px;
+  padding: 16px;
+  margin-top: 16px;
   cursor: pointer;
 }
 .result-card:hover { border-color: var(--app-primary); }
@@ -301,7 +301,12 @@
   padding: 10px 14px;
   margin-top: 8px;
 }
-.forex-flag { font-size: 26px; line-height: 1; flex-shrink: 0; }
+.forex-flag {
+  width: 26px; height: 26px; flex-shrink: 0;
+  border-radius: 50%; object-fit: cover;
+  box-shadow: 0 0 0 1px var(--border);
+}
+.forex-flag-fallback { display: inline-flex; align-items: center; justify-content: center; font-size: 18px; border-radius: 50%; background: var(--brand-light); }
 .forex-info { flex: 1; min-width: 0; }
 .forex-code { font-weight: 700; font-size: 13.5px; font-family: ui-monospace, monospace; color: var(--text); }
 .forex-name { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
@@ -346,14 +351,15 @@
 .chapter-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px 14px;
-  margin-top: 8px;
+  padding: 14px 16px;
+  margin-top: 18px;
   cursor: pointer;
 }
+.chapter-row:first-child { margin-top: 10px; }
 .chapter-row:hover { border-color: var(--app-primary); }
 .chapter-num {
   flex-shrink: 0;
@@ -365,7 +371,7 @@
   padding: 4px 8px;
   border-radius: 6px;
 }
-.chapter-title { flex: 1; font-size: 13px; line-height: 1.4; color: var(--text); }
+.chapter-title { flex: 1; font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--text); }
 .chapter-arrow { color: var(--muted); font-size: 18px; flex-shrink: 0; }
 
 /* ── Favourites tab ────────────────────────────────────────────────── */

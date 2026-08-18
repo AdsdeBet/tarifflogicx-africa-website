@@ -841,11 +841,13 @@ function renderInfoContent(key, data) {
   document.getElementById('info-back-btn').addEventListener('click', () => renderInfoIndex());
 }
 
-// Regional-indicator flag emoji from an ISO 3166-1 alpha-2 code — no image
-// assets needed, renders natively wherever the OS has flag emoji support.
-function flagEmoji(iso2) {
-  if (!iso2 || iso2.length !== 2) return '🌍';
-  return String.fromCodePoint(...iso2.toUpperCase().split('').map((c) => 127397 + c.charCodeAt(0)));
+// Real flag image, not emoji — Windows browsers don't render flag emoji as
+// pictures at all (Segoe UI Emoji shows the raw two-letter code instead),
+// unlike iOS/Android where the app's own emoji-based flags work fine. SVGs
+// bundled locally from the flag-icons package (MIT), assets/flags/{iso2}.svg.
+function flagImgHtml(iso2) {
+  if (!iso2 || iso2.length !== 2) return '<span class="forex-flag forex-flag-fallback">🌍</span>';
+  return `<img class="forex-flag" src="assets/flags/${iso2.toLowerCase()}.svg" alt="" width="26" height="26">`;
 }
 
 // forex gets its own layout rather than the generic JSON walk below: that
@@ -865,7 +867,7 @@ function renderForexContent(data) {
       <div class="lc-section-label" style="margin-top:18px;">${label}</div>
       ${items.map((c) => `
         <div class="forex-row">
-          <span class="forex-flag">${flagEmoji(c.country_iso2)}</span>
+          ${flagImgHtml(c.country_iso2)}
           <div class="forex-info">
             <div class="forex-code">${escapeHtml(c.code)}</div>
             <div class="forex-name">${escapeHtml(c.currency_name)} &middot; ${escapeHtml(c.country_name)}</div>
