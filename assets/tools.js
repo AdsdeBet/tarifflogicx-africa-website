@@ -651,8 +651,14 @@ function renderCodeDetail(code, container, opts) {
         </a>
       </div>
 
-      <button class="btn-primary" id="use-for-landed-cost" style="margin-top:16px;">🧮 Calculate landed cost for this code</button>
-      <button class="btn-secondary" id="share-code-btn" style="width:100%; margin-top:8px;">📤 Share</button>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn-secondary" id="export-pdf-btn" style="flex:1;">📥 Export PDF</button>
+        <button class="btn-secondary" id="share-code-btn" style="flex:1;">📤 Share</button>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn-primary" id="use-for-landed-cost" style="flex:1;">🧮 Landed Cost</button>
+        <button class="btn-secondary" id="log-shipment-btn" style="flex:1;">📦 Log Shipment</button>
+      </div>
     </div>
   `;
   document.getElementById('use-for-landed-cost')?.addEventListener('click', () => {
@@ -673,6 +679,8 @@ function renderCodeDetail(code, container, opts) {
     });
   });
   document.getElementById('share-code-btn')?.addEventListener('click', () => shareCode(code));
+  document.getElementById('export-pdf-btn')?.addEventListener('click', () => exportCodePdf(code));
+  document.getElementById('log-shipment-btn')?.addEventListener('click', () => openShipmentLogModal(code));
   loadItacAndHazchemChecks(code);
 }
 
@@ -731,6 +739,133 @@ function shareCode(code) {
     btn.textContent = '✓ Copied to clipboard';
     setTimeout(() => { btn.textContent = original; }, 1800);
   });
+}
+
+// jsPDF (assets/vendor/jspdf.umd.min.js, MIT, bundled locally like the flag
+// SVGs — no CDN dependency) is only ~420KB and most visitors never export a
+// PDF, so it's lazy-loaded on first use rather than added to every page load.
+let jsPdfLoadPromise = null;
+function ensureJsPdfLoaded() {
+  if (window.jspdf?.jsPDF) return Promise.resolve();
+  if (jsPdfLoadPromise) return jsPdfLoadPromise;
+  jsPdfLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'assets/vendor/jspdf.umd.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => { jsPdfLoadPromise = null; reject(new Error('Could not load the PDF library — check your connection and try again.')); };
+    document.head.appendChild(script);
+  });
+  return jsPdfLoadPromise;
+}
+
+// Mirrors the app's PdfService.exportTariffCode layout: duty/VAT, trade
+// agreement rates, permit info, a live ITAC control check, and a
+// disclaimer — one code per PDF, triggered as a browser download.
+async function exportCodePdf(code) {
+  const btn = document.getElementById('export-pdf-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparing…'; }
+  try {
+    await ensureJsPdfLoaded();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const marginX = 18;
+    const pageWidth = 210;
+    let y = 20;
+
+    const row = (label, value) => {
+      doc.setFontSize(10);
+      doc.setTextColor(90, 90, 90);
+      doc.text(label, marginX, y);
+      doc.setTextColor(30, 30, 30);
+      doc.text(String(value), pageWidth - marginX, y, { align: 'right' });
+      y += 6;
+    };
+    const sectionHeading = (title) => {
+      doc.setFontSize(11);
+      doc.setTextColor(15, 110, 86);
+      doc.text(title, marginX, y);
+      y += 6;
+    };
+
+    doc.setFontSize(16);
+    doc.setTextColor(15, 110, 86);
+    doc.text('TariffLogicX Africa', marginX, y);
+    y += 6;
+    doc.setFontSize(9);
+    doc.setTextColor(130, 130, 130);
+    doc.text('Tariff code detail — generated ' + new Date().toLocaleDateString('en-ZA'), marginX, y);
+    y += 8;
+    doc.setDrawColor(225, 220, 208);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 9;
+
+    doc.setFontSize(14);
+    doc.setTextColor(30, 30, 30);
+    doc.text(code.hs_code, marginX, y);
+    y += 7;
+    doc.setFontSize(11);
+    const descLines = doc.splitTextToSize(code.description, pageWidth - marginX * 2);
+    doc.text(descLines, marginX, y);
+    y += descLines.length * 5 + 6;
+
+    sectionHeading('Duty & VAT');
+    row('General duty', dutyDisplay(code));
+    row('VAT applicable', code.vat_applicable ? '15%' : 'Exempt');
+    if (code.ad_valorem_duty) row('Ad valorem excise', code.ad_valorem_duty + '%');
+    y += 3;
+
+    const prefs = [];
+    if (code.eu_uk_duty) prefs.push(['EU / UK', code.eu_uk_duty]);
+    if (code.efta_duty) prefs.push(['EFTA', code.efta_duty]);
+    if (code.sadc_duty) prefs.push(['SADC', code.sadc_duty]);
+    if (code.mercosur_duty) prefs.push(['MERCOSUR', code.mercosur_duty]);
+    if (code.afcfta_duty) prefs.push(['AfCFTA', code.afcfta_duty]);
+    if (prefs.length) {
+      sectionHeading('Preferential trade agreement rates');
+      prefs.forEach(([name, rate]) => row(name, rate));
+      y += 3;
+    }
+
+    sectionHeading('Permit');
+    row('Permit required', code.permit_required ? (code.permit_authority || 'Yes') : 'No');
+    if (code.permit_required && code.permit_note) {
+      doc.setFontSize(9);
+      doc.setTextColor(90, 90, 90);
+      const noteLines = doc.splitTextToSize(code.permit_note, pageWidth - marginX * 2);
+      doc.text(noteLines, marginX, y);
+      y += noteLines.length * 4.2 + 4;
+    }
+    y += 3;
+
+    // Live check, not cached — the PDF should reflect a real-time status.
+    try {
+      const res = await fetch(`${API_BASE}/web/itac-control/${encodeURIComponent(code.hs_code)}`);
+      const itac = await res.json();
+      sectionHeading('ITAC control status');
+      doc.setFontSize(10);
+      doc.setTextColor(30, 30, 30);
+      const itacText = itac.import_control || itac.export_control
+        ? `ITAC ${[itac.import_control ? 'import' : null, itac.export_control ? 'export' : null].filter(Boolean).join(' & ')} control applies`
+        : itac.confirmed_exempt ? 'Confirmed exempt from ITAC control' : 'No ITAC control on record';
+      doc.text(itacText, marginX, y);
+      y += 8;
+    } catch { /* omit section if the live check fails — don't block the PDF over it */ }
+
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setDrawColor(225, 220, 208);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 6;
+    doc.setFontSize(8);
+    doc.setTextColor(130, 130, 130);
+    const disclaimer = 'Reference information only, not a customs declaration or a substitute for a registered clearing agent. Verify against the official SARS Customs Tariff Schedule before relying on this for a real shipment. Generated by TariffLogicX Africa (tarifflogicxafrica.co.za).';
+    doc.text(doc.splitTextToSize(disclaimer, pageWidth - marginX * 2), marginX, y);
+
+    doc.save(`tlxa-${code.hs_code.replace(/\./g, '-')}.pdf`);
+  } catch (err) {
+    alert(err.message || 'Could not generate the PDF — try again.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📥 Export PDF'; }
+  }
 }
 
 function escapeHtml(s) {
@@ -1171,6 +1306,106 @@ function renderFaqAnswer(card, query, data) {
     `;
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// SHIPMENT LOG — client-side only (localStorage), like Favourites. This is
+// actually faithful to the app's own architecture, not a downgrade: the
+// app's shipment log is local SQLite too, one device only, never synced —
+// see ShipmentLogService's own comment ("purely local SQLite log").
+// ══════════════════════════════════════════════════════════════════════
+function getShipmentLog() {
+  try { return JSON.parse(localStorage.getItem('tlxa_shipment_log') || '[]'); } catch { return []; }
+}
+function saveShipmentLog(entries) {
+  localStorage.setItem('tlxa_shipment_log', JSON.stringify(entries));
+}
+
+const shipmentLogModal = document.getElementById('shipment-log-modal');
+const shipmentLogForm = document.getElementById('shipment-log-form');
+let shipmentLogCode = null; // the tariff code currently being logged against
+
+function openShipmentLogModal(code) {
+  shipmentLogCode = code;
+  document.getElementById('shipment-log-code-line').textContent = `${code.hs_code} — ${code.description}`;
+  shipmentLogForm.reset();
+  shipmentLogModal.style.display = 'flex';
+}
+function closeShipmentLogModal() { shipmentLogModal.style.display = 'none'; }
+document.getElementById('shipment-log-cancel-btn')?.addEventListener('click', closeShipmentLogModal);
+shipmentLogModal?.addEventListener('click', (e) => { if (e.target === shipmentLogModal) closeShipmentLogModal(); });
+
+shipmentLogForm?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const entries = getShipmentLog();
+  entries.unshift({
+    id: 'sl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    hsCode: shipmentLogCode.hs_code,
+    description: shipmentLogCode.description,
+    direction: document.getElementById('sl-direction').value,
+    customsValue: parseFloat(document.getElementById('sl-customs-value').value.replace(/,/g, '')) || 0,
+    dutyPaid: parseFloat(document.getElementById('sl-duty-paid').value) || 0,
+    vatPaid: parseFloat(document.getElementById('sl-vat-paid').value) || 0,
+    reference: document.getElementById('sl-reference').value.trim(),
+    notes: document.getElementById('sl-notes').value.trim(),
+    loggedAt: new Date().toISOString(),
+  });
+  saveShipmentLog(entries);
+  closeShipmentLogModal();
+  if (document.querySelector('.tab-panel[data-tab="favourites"]')?.classList.contains('active')) renderShipmentLog();
+});
+
+const shipmentLogListEl = document.getElementById('shipment-log-list');
+document.querySelector('.tab-btn[data-tab="favourites"]').addEventListener('click', renderShipmentLog);
+
+function renderShipmentLog() {
+  const entries = getShipmentLog();
+  if (entries.length === 0) {
+    shipmentLogListEl.innerHTML = '<div class="hint" style="margin-top:10px;">No shipments logged yet — use "Log Shipment" on any tariff code\'s detail view.</div>';
+    return;
+  }
+  shipmentLogListEl.innerHTML = entries.map((e) => `
+    <div class="result-card" style="cursor:default;">
+      <div class="result-card-top">
+        <span class="result-code">${escapeHtml(e.hsCode)}</span>
+        <button type="button" class="fav-star is-fav" data-delete-shipment="${e.id}" title="Delete entry" style="font-size:15px;">🗑</button>
+      </div>
+      <div class="result-desc">${escapeHtml(e.description)}</div>
+      <div class="badge-row">
+        <span class="badge ${e.direction === 'import' ? 'badge-duty' : 'badge-vat'}">${e.direction === 'import' ? 'Import' : 'Export'}</span>
+        <span class="badge badge-ok">Customs value: ${fmtR(e.customsValue)}</span>
+        ${e.dutyPaid ? `<span class="badge badge-ok">Duty: ${fmtR(e.dutyPaid)}</span>` : ''}
+        ${e.vatPaid ? `<span class="badge badge-ok">VAT: ${fmtR(e.vatPaid)}</span>` : ''}
+      </div>
+      ${e.reference ? `<div class="hint" style="margin-top:6px;">Ref: ${escapeHtml(e.reference)}</div>` : ''}
+      ${e.notes ? `<div class="hint" style="margin-top:2px;">${escapeHtml(e.notes)}</div>` : ''}
+      <div class="hint" style="margin-top:4px;">${new Date(e.loggedAt).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+    </div>
+  `).join('');
+  shipmentLogListEl.querySelectorAll('[data-delete-shipment]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      saveShipmentLog(getShipmentLog().filter((e) => e.id !== btn.dataset.deleteShipment));
+      renderShipmentLog();
+    });
+  });
+}
+
+document.getElementById('shipment-log-csv-btn')?.addEventListener('click', () => {
+  const entries = getShipmentLog();
+  if (entries.length === 0) return;
+  const header = ['HS Code', 'Description', 'Direction', 'Customs Value', 'Duty Paid', 'VAT Paid', 'Reference', 'Notes', 'Logged At'];
+  const csvEscape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = entries.map((e) => [e.hsCode, e.description, e.direction, e.customsValue, e.dutyPaid, e.vatPaid, e.reference, e.notes, e.loggedAt].map(csvEscape).join(','));
+  const csv = [header.map(csvEscape).join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tlxa-shipment-log-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
 
 // ── Init ──────────────────────────────────────────────────────────────
 // ?tab=info&topic=hazchem deep-links here from the static SEO preview

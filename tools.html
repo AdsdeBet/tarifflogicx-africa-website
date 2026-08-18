@@ -132,6 +132,13 @@
   <div class="tab-panel" data-tab="favourites">
     <div class="ai-intro">⭐ <strong>Saved on this device.</strong> Tap the star on any tariff code to save it here — stored locally in your browser, just like the app's Favourites screen.</div>
     <div id="favourites-list"></div>
+
+    <div class="lc-section-label" style="margin-top:28px; display:flex; align-items:center; justify-content:space-between;">
+      <span>📦 Shipment Log</span>
+      <button type="button" class="btn-secondary" id="shipment-log-csv-btn" style="padding:6px 12px; font-size:11px;">Download CSV</button>
+    </div>
+    <p class="hint">Saved on this device only, like Favourites — logged from a tariff code's detail view.</p>
+    <div id="shipment-log-list"></div>
   </div>
 
   <!-- ── Important Information ─────────────────────────────────────── -->
@@ -240,6 +247,34 @@
       </form>
     </div>
 
+  </div>
+</div>
+
+<div id="shipment-log-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center; overflow-y:auto; padding:20px 0;">
+  <div style="background:#fff; border-radius:14px; padding:24px; width:360px; max-width:90vw; max-height:90vh; overflow-y:auto;">
+    <h3 style="margin:0 0 4px; font-size:15px;">📦 Log this shipment</h3>
+    <p id="shipment-log-code-line" style="font-size:12.5px; color:var(--muted); margin:0 0 14px;"></p>
+    <form id="shipment-log-form">
+      <label class="field-label" for="sl-direction">Direction</label>
+      <select class="text-input" id="sl-direction" style="margin-bottom:10px;">
+        <option value="import">Import</option>
+        <option value="export">Export</option>
+      </select>
+      <label class="field-label" for="sl-customs-value">Customs value (ZAR)</label>
+      <input class="text-input" type="text" inputmode="decimal" id="sl-customs-value" placeholder="e.g. 150000" style="margin-bottom:10px;">
+      <label class="field-label" for="sl-duty-paid">Duty paid (ZAR)</label>
+      <input class="text-input" type="text" inputmode="decimal" id="sl-duty-paid" placeholder="0" style="margin-bottom:10px;">
+      <label class="field-label" for="sl-vat-paid">VAT paid (ZAR)</label>
+      <input class="text-input" type="text" inputmode="decimal" id="sl-vat-paid" placeholder="0" style="margin-bottom:10px;">
+      <label class="field-label" for="sl-reference">Reference</label>
+      <input class="text-input" type="text" id="sl-reference" placeholder="e.g. PO number, shipment ref" style="margin-bottom:10px;">
+      <label class="field-label" for="sl-notes">Notes</label>
+      <textarea class="text-input" id="sl-notes" rows="2" style="margin-bottom:14px;"></textarea>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn-secondary" id="shipment-log-cancel-btn" style="flex:1;">Cancel</button>
+        <button type="submit" class="btn-primary" style="flex:1;">Save entry</button>
+      </div>
+    </form>
   </div>
 </div>
 
