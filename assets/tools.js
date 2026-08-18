@@ -872,7 +872,10 @@ function renderForexContent(data) {
             <div class="forex-code">${escapeHtml(c.code)}</div>
             <div class="forex-name">${escapeHtml(c.currency_name)} &middot; ${escapeHtml(c.country_name)}</div>
           </div>
-          <div class="forex-rate">${Number(c.rate_per_zar).toFixed(c.rate_per_zar < 1 ? 4 : 2)}</div>
+          <div class="forex-rate">
+            <span class="forex-rate-zar">ZAR 1.00 =</span>
+            <span class="forex-rate-val">${escapeHtml(c.code.toUpperCase())} ${Number(c.rate_per_zar).toFixed(c.rate_per_zar < 1 ? 4 : 2)}</span>
+          </div>
         </div>
       `).join('')}
     `;

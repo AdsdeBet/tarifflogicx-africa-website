@@ -311,11 +311,25 @@
 .forex-code { font-weight: 700; font-size: 13.5px; font-family: ui-monospace, monospace; color: var(--text); }
 .forex-name { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
 .forex-rate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  text-align: right;
+}
+.forex-rate-zar {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.3px;
+}
+.forex-rate-val {
   font-size: 19px;
   font-weight: 800;
   color: var(--app-primary-dark);
   font-family: ui-monospace, monospace;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .app-cta-inline {
