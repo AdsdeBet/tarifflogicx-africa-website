@@ -967,6 +967,23 @@ const faqResults = document.getElementById('faq-results');
 faqAskBtn.addEventListener('click', askFaq);
 faqInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') askFaq(); });
 
+// Separate from the mailto: link next to it (which contact.js already
+// intercepts into the professional contact-form modal) — this just covers
+// the case where someone would rather paste the address into their own
+// mail client than use the on-site form.
+document.getElementById('faq-copy-email-btn')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText('support@tarifflogicxafrica.co.za');
+    const original = btn.textContent;
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  } catch {
+    // Clipboard API unavailable (very old browser) — the mailto: link right
+    // next to this button still works as a fallback either way.
+  }
+});
+
 async function askFaq() {
   const query = faqInput.value.trim();
   if (query.length < 3) return;

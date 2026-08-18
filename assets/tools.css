@@ -199,6 +199,34 @@
   margin-bottom: 14px;
   line-height: 1.5;
 }
+
+/* ── FAQ contact note ──────────────────────────────────────────────── */
+.faq-contact-note {
+  margin-top: 24px;
+  padding: 16px;
+  background: #fff;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+}
+.faq-contact-note p { margin: 0 0 10px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.faq-contact-email-row { display: inline-flex; align-items: center; gap: 8px; }
+.faq-contact-email { font-size: 13.5px; font-weight: 700; color: var(--app-primary-dark); text-decoration: none; }
+.faq-contact-email:hover { text-decoration: underline; }
+.faq-copy-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.faq-copy-btn:hover { border-color: var(--app-primary); }
 .suggestion-card {
   background: #fff;
   border: 1px solid var(--border);
