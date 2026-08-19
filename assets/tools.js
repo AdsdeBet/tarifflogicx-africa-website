@@ -732,11 +732,23 @@ function shareCode(code) {
     navigator.share({ title: `TariffLogicX Africa — ${code.hs_code}`, text }).catch(() => {});
     return;
   }
-  navigator.clipboard?.writeText(text).then(() => {
-    const btn = document.getElementById('share-code-btn');
+  const btn = document.getElementById('share-code-btn');
+  if (!navigator.clipboard) {
+    if (btn) { const original = btn.textContent; btn.textContent = 'Copy not supported here'; setTimeout(() => { btn.textContent = original; }, 1800); }
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
     if (!btn) return;
     const original = btn.textContent;
     btn.textContent = '✓ Copied to clipboard';
+    setTimeout(() => { btn.textContent = original; }, 1800);
+  }).catch(() => {
+    // Clipboard permission denied/blocked — without this catch the promise
+    // rejection was unhandled and the button silently did nothing at all,
+    // which is indistinguishable from a broken click handler to a user.
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.textContent = 'Could not copy — try again';
     setTimeout(() => { btn.textContent = original; }, 1800);
   });
 }

@@ -1,0 +1,15 @@
+# Force browsers to revalidate JS/CSS on every visit instead of serving a
+# possibly-stale cached copy indefinitely. This site is deployed manually
+# (no cache-busting version query strings on script/link tags across 49
+# pages), and stale browser caches repeatedly made real, already-deployed
+# fixes look like they hadn't shipped — confirmed more than once by testing
+# the same URLs in a private/incognito window, which always showed the
+# correct, current content. `no-cache` still allows caching, it just forces
+# a conditional request (If-Modified-Since/ETag) before reusing the cached
+# copy, so a real change is picked up on the very next visit rather than
+# only after the cache naturally expires or the user manually clears it.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
