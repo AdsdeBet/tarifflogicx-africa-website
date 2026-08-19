@@ -634,6 +634,7 @@ function renderCodeDetail(code, container, opts) {
 
       <div id="detail-itac-check" class="detail-check-row"><span class="spinner"></span> Checking ITAC control status…</div>
       <div id="detail-hazchem-check" class="detail-check-row" style="display:none;"></div>
+      <div id="detail-blanket-rules" class="detail-check-row" style="display:none;"></div>
 
       <div class="lc-section-label">Verify with SARS</div>
       <div class="detail-sars-links">
@@ -707,6 +708,8 @@ async function loadItacAndHazchemChecks(code) {
     if (itacEl) itacEl.innerHTML = '';
   }
 
+  loadBlanketRulesCheck();
+
   if (!code.chapter) return;
   try {
     const res = await fetch(`${API_BASE}/web/hazchem-check/${encodeURIComponent(code.chapter)}`);
@@ -716,6 +719,53 @@ async function loadItacAndHazchemChecks(code) {
       hazEl.innerHTML = `<span class="badge badge-warn">⚠️ Chapter ${escapeHtml(code.chapter)} is commonly flagged for HazChem${data.note ? ' — ' + escapeHtml(data.note) : ''}</span>`;
     }
   } catch { /* leave hidden */ }
+}
+
+// The "no permit" badge above reflects this SPECIFIC HS code only. Separately
+// — and regardless of HS code — South Africa's ITAC requires an import permit
+// for most used/second-hand goods (confirmed 2026-08-19 via a real user
+// question: "does a used excavator need a permit?" — yes, under this rule,
+// even though new excavators are correctly unflagged under 8429). This is a
+// universal disclaimer, not a per-code lookup, so it's fetched once and
+// cached rather than refetched on every code view — mirrors the app's
+// ItacControlCard, which shows the same checkbox-gated note.
+let blanketRulesPromise = null;
+function fetchBlanketRules() {
+  if (!blanketRulesPromise) {
+    blanketRulesPromise = fetch(`${API_BASE}/web/itac-blanket-rules`)
+      .then((res) => res.json())
+      .catch(() => { blanketRulesPromise = null; return null; });
+  }
+  return blanketRulesPromise;
+}
+
+async function loadBlanketRulesCheck() {
+  const el = document.getElementById('detail-blanket-rules');
+  if (!el) return;
+  const data = await fetchBlanketRules();
+  const usedGoodsNote = data?.blanket_rules?.find((r) => r.rule_key === 'used_secondhand_goods')?.note;
+  if (!usedGoodsNote) return;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="itac-blanket-card" id="itac-blanket-card">
+      <label class="itac-blanket-toggle">
+        <input type="checkbox" id="used-goods-checkbox" />
+        Is this item used, second-hand, or refurbished?
+      </label>
+      <div class="itac-blanket-note" id="used-goods-note" style="display:none;">
+        <p>${escapeHtml(usedGoodsNote)}</p>
+        <a href="https://itac.org.za/import-control/" target="_blank" rel="noopener">ITAC used-goods import permit &rarr;</a>
+      </div>
+    </div>
+  `;
+  const checkbox = document.getElementById('used-goods-checkbox');
+  const note = document.getElementById('used-goods-note');
+  const card = document.getElementById('itac-blanket-card');
+  checkbox?.addEventListener('change', () => {
+    note.style.display = checkbox.checked ? 'block' : 'none';
+    card.classList.toggle('itac-blanket-card--warn', checkbox.checked);
+  });
 }
 
 function shareCode(code) {
