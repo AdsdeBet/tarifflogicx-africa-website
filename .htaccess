@@ -1,3 +1,14 @@
+# HTTPS redirect — cPanel's "Force HTTPS Redirect" toggle (enabled
+# 2026-08-18) likely wrote this same rule into a previously-hidden
+# .htaccess in public_html that our "delete everything, upload zip"
+# deploy process may never have touched (dotfiles are hidden by default
+# in cPanel File Manager). Including it explicitly here so this checked-
+# in file is the single source of truth and a future deploy can't
+# silently clobber the redirect by overwriting an untracked .htaccess.
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
 # Force browsers to revalidate JS/CSS on every visit instead of serving a
 # possibly-stale cached copy indefinitely. This site is deployed manually
 # (no cache-busting version query strings on script/link tags across 49
